@@ -1,0 +1,14 @@
+redis:  #redis 配置
+  ip: 127.0.0.1
+  port: 6379
+  password: ""
+  maxIdle: 25
+  maxActive: 0
+  idleTimeout: 360
+  dbIndex: 1
+#log 配置
+log:
+  path: "logs/strategymgr.log"
+  level: "DEBUG"
+  type: "file"
+  cutTime: 24 #hour 日记切割时间
