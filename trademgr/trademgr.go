@@ -91,7 +91,6 @@ func NewTradeMgr() ITradeMgr {
 }
 
 func SubEntner(sugMsg []byte) error {
-
 	var strateMsg ordermgr.StrategyMsg
 	var err error
 	err = json.Unmarshal(sugMsg, &strateMsg)
@@ -99,6 +98,7 @@ func SubEntner(sugMsg []byte) error {
 		logger.Error("TradeMgr.ExecuteTrade failed to unmarshal strateMsg: ", err)
 		return err
 	}
+	logger.Infof("(%s,%s)=>%s", strateMsg.DataSource.Symbol, strateMsg.DataSource.Market, strateMsg.StrategyRet.TradeSuggest.TradeSide)
 	symbol := strings.ToUpper(strateMsg.DataSource.Symbol)
 
 	if tradeMgr.GetTradeMgr(symbol) == nil {

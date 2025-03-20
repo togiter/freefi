@@ -2,14 +2,71 @@ package accmgr
 
 import (
 	"fmt"
+	"freefi/trademgr/common"
 	"freefi/trademgr/pkg/logger"
 	"freefi/trademgr/pkg/utils"
+	"math"
 	"reflect"
 
 	"github.com/adshao/go-binance/v2"
 	"github.com/adshao/go-binance/v2/delivery"
 	"github.com/adshao/go-binance/v2/futures"
 )
+
+func fromBNPosition(bnOrder interface{}) *Position {
+	switch ord := bnOrder.(type) {
+	case *futures.PositionRiskV2:
+		amount := math.Abs(utils.ToFloat64(ord.PositionAmt))
+		return &Position{
+			Side:             string(ord.PositionSide),
+			LeverRate:        utils.ToFloat64(ord.Leverage),
+			Qty:              fmt.Sprintf("%v", amount),
+			EntryPrice:       ord.EntryPrice,
+			MarkPrice:        ord.MarkPrice,
+			UnRealizedProfit: ord.UnRealizedProfit,
+			updateTime:       0,
+		}
+	case *futures.PositionRisk:
+		amount := math.Abs(utils.ToFloat64(ord.PositionAmt))
+		return &Position{
+			Side:             string(ord.PositionSide),
+			LeverRate:        1,
+			Qty:              fmt.Sprintf("%v", amount),
+			EntryPrice:       ord.EntryPrice,
+			MarkPrice:        ord.MarkPrice,
+			UnRealizedProfit: ord.UnRealizedProfit,
+			updateTime:       ord.UpdateTime,
+		}
+	case *delivery.PositionRisk:
+		amount := math.Abs(utils.ToFloat64(ord.PositionAmt))
+		return &Position{
+			Side:             string(ord.PositionSide),
+			LeverRate:        utils.ToFloat64(ord.Leverage),
+			Qty:              fmt.Sprintf("%v", amount),
+			EntryPrice:       ord.EntryPrice,
+			MarkPrice:        ord.MarkPrice,
+			UnRealizedProfit: ord.UnRealizedProfit,
+			updateTime:       0,
+		}
+	case *binance.FuturesUserPosition:
+		side := common.TradeSideShort
+		profit := utils.ToFloat64(ord.UnRealizedProfit)
+		if profit >= 0 && utils.ToFloat64(ord.MarkPrice) > utils.ToFloat64(ord.EntryPrice) {
+			side = common.TradeSideLong
+		}
+		amount := math.Abs(utils.ToFloat64(ord.PositionAmt))
+		return &Position{
+			Side:             side,
+			Qty:              fmt.Sprintf("%v", amount),
+			EntryPrice:       ord.EntryPrice,
+			MarkPrice:        ord.MarkPrice,
+			UnRealizedProfit: ord.UnRealizedProfit,
+			updateTime:       0,
+			LeverRate:        1,
+		}
+	}
+	return &Position{}
+}
 
 /*
 	type Order struct {

@@ -9,8 +9,31 @@ type PlaceOrderParams struct {
 	LeverRate float64
 	StopPrice *string
 	IsTest    bool
+	IsClose   *bool //是否平仓
 }
 
+type PositionParams struct {
+	BaseOrderParams
+	Side *string
+}
+
+type Position struct {
+	BaseOrderParams
+	Side             string
+	Qty              string
+	EntryPrice       string
+	MarkPrice        string //标记价格
+	UnRealizedProfit string //持仓盈亏
+	updateTime       int64
+	LeverRate        float64
+}
+
+type CloseOrderParams struct {
+	BaseOrderParams
+	PositionSide string
+	StopPrice    *string
+	Qty          *string //for spot
+}
 type BaseOrderParams struct {
 	Market   string
 	Exchange string
@@ -45,10 +68,11 @@ type Order struct {
 }
 
 type OrderExt struct {
-	WinPrice  *string //止盈止损价格，如果有
-	LossPrice *string //止盈止损价格，如果有
-	LeverRate *float64
-	IsWinOrLoss bool //是否止盈止损
+	WinPrice    *string //止盈止损价格，如果有
+	LossPrice   *string //止盈止损价格，如果有
+	LeverRate   *float64
+	IsWinOrLoss bool   //是否止盈止损
+	Timeout     *int64 //订单超时时间，如果有
 }
 
 type GetBalanceParams struct {

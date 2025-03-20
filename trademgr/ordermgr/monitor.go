@@ -47,6 +47,8 @@ type IOrderMonitor interface {
 	Clear(baseParams accmgr.BaseOrderParams) error
 	OrderEmpty() bool
 	AddOrder(order *accmgr.Order) error
+	UpdateOrders() error
+	ResetToOrders(orders []*accmgr.Order) error
 }
 type OrderMonitor struct {
 	running bool
@@ -54,6 +56,42 @@ type OrderMonitor struct {
 	orders  []*accmgr.Order
 	lock    sync.RWMutex
 	accMgr  accmgr.IAccMgr
+}
+
+func (om *OrderMonitor) UpdateOrders() error {
+	if len(om.orders) == 0 {
+		return nil
+	}
+	defer om.lock.Unlock()
+	om.lock.Lock()
+	for i, order := range om.orders {
+		if order.Type == common.OrderTypeLimit {
+			ord, err := om.accMgr.GetOrders(accmgr.GetOrderParams{
+				BaseOrderParams: order.BaseOrderParams,
+				OrderID:         &order.ID,
+			})
+			if err != nil || len(ord) == 0 {
+				logger.Errorf("get order(%d) error:%v", order.ID, err)
+				continue
+			}
+			if ord[0].Status != common.OrderStatusTypeCanceled && ord[0].Status != common.OrderStatusTypeExpired {
+				index := i
+				om.orders[index] = ord[0]
+				logger.Infof("update order(%+v) error:%v", ord[0], err)
+			}
+		}
+	}
+	return nil
+}
+func (om *OrderMonitor) ResetToOrders(orders []*accmgr.Order) error {
+	om.lock.Lock()
+	defer om.lock.Unlock()
+	om.orders = nil
+	om.orders = orders
+	if !om.running {
+		go om.Start()
+	}
+	return nil
 }
 
 // Clear implements IOrderMonitor.
@@ -108,7 +146,7 @@ func (om *OrderMonitor) Start() error {
 			logger.Info("order monitor stopped")
 			return nil
 		default:
-			time.Sleep(5 * time.Second)
+			time.Sleep(25 * time.Second)
 			om.handleTicker()
 		}
 	}
@@ -138,33 +176,53 @@ func (om *OrderMonitor) handleTicker() {
 	//3. 如果满足，则回调函数，并更新订单状态
 	for _, order := range om.orders {
 		if order.Status == common.OrderStatusTypeFilled {
+			if order.BaseOrderParams.Market == common.MarketSpot && order.Side == common.TradeSideShort {
+				//现货卖出单 不需要止盈止损
+				continue
+			}
 			//已经吃单，
 			_, isWinOrLoss := om.winloss(price, order)
 			if isWinOrLoss {
 				//止盈止损成功，更新订单状态
 				order.Status = common.OrderStatusTypeFilled
-				logger.Infof("止盈止损成功，更新订单状态(%s,%s) price: %v", baseParams.Market, baseParams.Symbol, price)
-
+				logger.Infof("止盈止损成功，更新订单状态(%s,%s) price: %v,%v", baseParams.Market, baseParams.Symbol, price, order.Ext)
 				continue
 			}
 			tmpOrds = append(tmpOrds, order)
 			continue
 		}
-		ordPrice := utils.ToFloat64(order.Price)
+		// ordPrice := utils.ToFloat64(order.Price)
 		//1.如果是限价单，先判断是否成交
 		if order.Type == common.OrderTypeLimit {
-			if order.Side == common.TradeSideBuy && price <= ordPrice {
-				//做多，判断价格是否低于订单价格而成交
-				order.Status = common.OrderStatusTypeFilled
-				logger.Infof("限价单Buy成功，更新订单状态(%s,%s) price: %v", baseParams.Market, baseParams.Symbol, price)
-
-				//todo: 应该要去拉订单验证一下
-			}
-		} else if order.Side == common.TradeSideSell && price >= ordPrice {
+			// if (order.Side == common.TradeSideLong && price < ordPrice) ||
+			// 	order.Side == common.TradeSideShort && price > ordPrice {
+			//做多，判断价格是否低于订单价格而成交
 			//做空，判断价格是否高于订单价格而成交
-			order.Status = common.OrderStatusTypeFilled
-			////todo: 应该要去拉订单验证一下
-			logger.Infof("限价单Sell成功，更新订单状态(%s,%s) price: %v", baseParams.Market, baseParams.Symbol, price)
+			// order.Status = common.OrderStatusTypeFilled
+			// logger.Infof("限价单Buy/Sell成功，更新订单状态(%s,%s) price: %v,%v", baseParams.Market, baseParams.Symbol, price, order.Ext)
+			//todo: 应该要去拉订单验证一下
+			ords, err := om.accMgr.GetOrders(accmgr.GetOrderParams{
+				BaseOrderParams: order.BaseOrderParams,
+				OrderID:         &order.ID,
+			})
+			if err != nil || len(ords) == 0 {
+				logger.Errorf("monitor get order(%d) error:%v", order.ID, err)
+				continue
+			}
+			if ords[0].Status == common.OrderStatusTypeCanceled || ords[0].Status == common.OrderStatusTypeExpired {
+				continue
+			}
+			ext := order.Ext
+			order = ords[0]
+			order.Ext = ext
+
+			// } else {
+			if order.Status == common.OrderStatusTypeNew || order.Status == common.OrderStatusTypePartiallyFilled {
+				isCancel, _ := om.cancelOrderIfTimeout(order)
+				if isCancel {
+					continue
+				}
+			}
 
 		}
 		tmpOrds = append(tmpOrds, order)
@@ -182,7 +240,7 @@ func (om *OrderMonitor) winloss(price float64, order *accmgr.Order) (*accmgr.Ord
 	if order.Ext == nil || order.Ext.WinPrice == nil || order.Ext.LossPrice == nil {
 		return nil, false
 	}
-	var placeParams *accmgr.PlaceOrderParams
+	var placeParams *accmgr.CloseOrderParams
 	lossPrice := MinPriceValue
 	winPrice := MinPriceValue
 	if order.Ext.WinPrice != nil {
@@ -193,62 +251,79 @@ func (om *OrderMonitor) winloss(price float64, order *accmgr.Order) (*accmgr.Ord
 		lossPrice = utils.ToFloat64(*order.Ext.LossPrice)
 	}
 
-	if order.Side == common.TradeSideBuy {
+	if order.Side == common.TradeSideLong {
 		//做多，判断价格是否低于止盈价格而成交
 		if (winPrice > MinPriceValue && price >= winPrice) ||
 			(lossPrice > MinPriceValue && price <= lossPrice) {
+			logger.Warnf("止盈止损成功，更新订单状态(%s,%s) price:(win: %.5f,loss: %.5f,cur: %.5f)", order.BaseOrderParams.Market, order.BaseOrderParams.Symbol, winPrice, lossPrice, price)
 			//止损单
 			//止盈单
-			side := common.TradeSideSell
+			// side := common.TradeSideShort
 			if order.BaseOrderParams.Market != common.MarketSpot {
-				side = common.TradeSideCloseBuy
+				// side = common.TradeSideCloseBuy
 			}
-			placeParams = &accmgr.PlaceOrderParams{
+			placeParams = &accmgr.CloseOrderParams{
 				BaseOrderParams: order.BaseOrderParams,
-				Type:            common.OrderTypeMarket, //止盈止损就用市价吧
-				Side:            side,
-				Price:           fmt.Sprintf("%v", price),
-				Qty:             order.Qty,
-				StopPrice:       nil,
+				PositionSide:    common.TradeSideLong,
+				Qty:             &order.Qty,
 			}
 		}
-	} else if order.Side == common.TradeSideSell {
+	} else if order.Side == common.TradeSideShort {
 		if order.BaseOrderParams.Market == common.MarketSpot {
-			logger.Errorf("现货卖出单 不需要止损")
+			logger.Warnf("现货卖出单 不需要止损")
 			return nil, false
 		}
-		side := common.TradeSideCloseSell
+		// side := common.TradeSideCloseSell
 		//做空，判断价格是否高于止损价格而成交
 		if (lossPrice > MinPriceValue && price >= lossPrice) ||
 			(winPrice > MinPriceValue && price <= winPrice) {
-			placeParams = &accmgr.PlaceOrderParams{
+			placeParams = &accmgr.CloseOrderParams{
 				BaseOrderParams: order.BaseOrderParams,
-				Type:            common.OrderTypeMarket, //止盈止损就用市价吧
-				Side:            side,
-				Price:           fmt.Sprintf("%v", price),
-				Qty:             order.Qty,
-				StopPrice:       nil,
+				PositionSide:    common.TradeSideShort,
+				Qty:             &order.Qty,
 			}
 		}
 	}
 
 	if placeParams != nil {
-		stopOrder, err := om.accMgr.CreateOrder(*placeParams)
+		err := om.accMgr.CloseOrders(*placeParams)
 		if err != nil {
-			logger.Errorf("(%s,%s)create order(amount: %s, price: %s) error: %v", placeParams.Market, placeParams.Symbol, placeParams.Qty, placeParams.Price, err)
+			logger.Errorf("(%s,%s)CloseOrders order(amount: %s, price: %s) error: %v", placeParams.Market, placeParams.Symbol, placeParams.Qty, price, err)
 			return nil, false
 		}
-		logger.Infof("(%s,%s)create order(amount: %s, price: %s, ID: %s) 成功", placeParams.Market, placeParams.Symbol, placeParams.Qty, placeParams.Price, stopOrder.ID)
-		return stopOrder, true
+		logger.Infof("(%s,%s)CloseOrders order(amount: %s, price: %s, ID: %s) 成功", placeParams.Market, placeParams.Symbol, placeParams.Qty, price, order.ID)
+		return nil, true
 	}
 	return nil, false
 }
 
 func (om *OrderMonitor) Stop() error {
 	if om.running {
-		om.running = false
 		om.done <- true
 		return nil
 	}
 	return fmt.Errorf("order monitor is not running")
+}
+
+func (om *OrderMonitor) cancelOrderIfTimeout(order *accmgr.Order) (bool, error) {
+	if order.Status == common.OrderStatusTypeFilled {
+		return false, nil
+	}
+	if order.Ext == nil || order.Ext.Timeout == nil {
+		return false, nil
+	}
+	timeout := *(order.Ext.Timeout)
+	if timeout < time.Now().Unix() {
+		err := om.accMgr.CancelOrders(accmgr.CancelOrderParams{
+			BaseOrderParams: order.BaseOrderParams,
+			OrderID:         &order.ID,
+		})
+		if err != nil {
+			logger.Errorf("(%s,%s)cancel order(ID: %d) error: %v", order.BaseOrderParams.Market, order.BaseOrderParams.Symbol, order.ID, err)
+			return false, err
+		}
+		logger.Warnf("(%s,%s)cancel order(ID: %d) timeout", order.BaseOrderParams.Market, order.BaseOrderParams.Symbol, order.ID)
+		return true, nil
+	}
+	return false, nil
 }

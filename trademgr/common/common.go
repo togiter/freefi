@@ -1,5 +1,7 @@
 package common
 
+const MinFloatValue = 0.00000001
+
 const (
 	MarketSpot    = "SPOT"
 	MarketFutureU = "FUTURE_U" //U本位合约
@@ -19,12 +21,40 @@ const (
 )
 
 const (
-	TradeSideBuy       = "BUY"
-	TradeSideSell      = "SELL"
-	TradeSideNone      = "NONE"
-	TradeSideCloseBuy  = "CLOSE_BUY" //平多
-	TradeSideCloseSell = "CLOSE_SELL" //平空
+	TradeSideNone       = "NONE"
+	TradeSideShort      = "SHORT"
+	TradeSideLong       = "LONG"
+	TradeSideCloseLong  = "CLOSE_LONG"  //平多
+	TradeSideCloseShort = "CLOSE_SHORT" //平空
 )
+
+// ReserveSide 反转开平仓
+func ReserveSide(tSide string) string {
+	if tSide == TradeSideLong {
+		return TradeSideShort
+	} else if tSide == TradeSideShort {
+		return TradeSideLong
+	}
+	return TradeSideNone
+}
+
+func SideToFuture(tSide string) string {
+	if tSide == TradeSideLong {
+		return "LONG"
+	} else if tSide == TradeSideShort {
+		return "SHORT"
+	}
+	return tSide
+}
+
+func SideToSpot(tSide string) string {
+	if tSide == TradeSideCloseShort {
+		return TradeSideLong
+	} else if tSide == TradeSideCloseLong {
+		return TradeSideShort
+	}
+	return tSide
+}
 
 const (
 	StrategyNormal  = "NORMAL"
