@@ -36,7 +36,7 @@ type KDJParams struct {
 
 func ExecuteKDJ(klines []common.KLine, params MicroStrategyParams) (ret *MicroStrategyRet, err error) {
 	ret = &MicroStrategyRet{
-		Params: params,
+		Params: &params,
 		TradeSuggest: common.TradeSuggest{
 			TradeSide:  common.TradeSideNone,
 			CreateTime: time.Now().Unix(),
@@ -76,19 +76,19 @@ func ExecuteKDJ(klines []common.KLine, params MicroStrategyParams) (ret *MicroSt
 	}
 	if j_1 > k_1 && j <= k && k_1 > overBuyVal {
 		//1 死叉
-		tradeSide = common.TradeSideSell
+		tradeSide = common.TradeSideShort
 		fomo = 1
 		mark = "=>KDJ 死叉" + mark
 
 	} else if j_1 < k_1 && j >= k && k_1 <= overSellVal {
 		//2.金叉
-		tradeSide = common.TradeSideBuy
+		tradeSide = common.TradeSideLong
 		fomo = 1
 		mark = "=>KDJ 金叉" + mark
 	} else if !params.Legacy {
 		if j_2 >= j_1 && j_1 > j && k_1 > overBuyVal {
 			//3.高位反弹后持续下跌 || 死叉后持续下跌
-			tradeSide = common.TradeSideSell
+			tradeSide = common.TradeSideShort
 			mark = "=>KDJ 高位反弹后持续下跌 || 死叉后持续下跌" + mark
 			if (j_2 >= j_3 && j_1 > k_1) || (j_3 >= k_3 && j_2 <= k_2) {
 				//顶部反转后 ｜｜ 死叉后
@@ -97,7 +97,7 @@ func ExecuteKDJ(klines []common.KLine, params MicroStrategyParams) (ret *MicroSt
 
 		} else if j_1 >= j_2 && j > j_1 && k_1 <= overSellVal {
 			//4. 低位反弹并持续上扬 ｜｜ 金叉后持续上扬
-			tradeSide = common.TradeSideBuy
+			tradeSide = common.TradeSideLong
 
 			mark = "=>KDJ 低位反弹并持续上扬 ｜｜ 金叉后持续上扬" + mark
 			if (j_3 >= j_2 && j_1 <= k_1) || (j_3 <= k_3 && j_2 >= k_2) {
@@ -106,11 +106,11 @@ func ExecuteKDJ(klines []common.KLine, params MicroStrategyParams) (ret *MicroSt
 
 		} else if j_1 > j && j_1 >= j_2 && k_1 >= overBuyVal {
 			//5.高位反弹
-			tradeSide = common.TradeSideSell
+			tradeSide = common.TradeSideShort
 			mark = "=>KDJ 高位反弹" + mark
 		} else if j_1 < j && j_1 <= j_2 && k_1 <= overSellVal {
 			//6.低位反弹
-			tradeSide = common.TradeSideSell
+			tradeSide = common.TradeSideShort
 			mark = "=>KDJ 低位反弹" + mark
 		}
 	}

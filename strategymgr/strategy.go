@@ -17,25 +17,25 @@ const (
 )
 
 type PubMsg struct {
-	DataSource   DataSource
-	TradeSuggest common.TradeSuggest
+	DataSource  DataSource
+	StrategyRet StrategyRet
 }
 
 type IStrategy interface {
 	Work() error
 	Stop() error
-	UpdateParams(params StrategyParams) error
+	UpdateParams(params *StrategyParams) error
 	Name() string
 }
 
 type Strategy struct {
-	params    StrategyParams
+	params    *StrategyParams
 	stopCh    chan bool
 	kLines    map[int][]common.KLine
 	isWorking bool
 }
 
-func NewStrategy(params StrategyParams) IStrategy {
+func NewStrategy(params *StrategyParams) IStrategy {
 	return &Strategy{
 		params:    params,
 		isWorking: false,
@@ -79,8 +79,8 @@ func (s *Strategy) isReload(params StrategyParams) bool {
 	return false
 }
 
-func (s *Strategy) UpdateParams(params StrategyParams) error {
-	if s.isReload(params) {
+func (s *Strategy) UpdateParams(params *StrategyParams) error {
+	if s.isReload(*params) {
 		logger.Infof("%v strategy ReWorking", params.Name)
 		s.Stop()
 		go s.Work()
@@ -104,6 +104,7 @@ func (s *Strategy) Work() error {
 	for {
 		select {
 		case <-s.stopCh:
+			s.isWorking = false
 			logger.Infof("%v Strategy Stop Success!!", s.params.Name)
 			return nil
 		default:
@@ -122,14 +123,26 @@ func (s *Strategy) handleFlow(dataLimit int) {
 	sRet.MakeFinalTrade()
 	// 将 interface{} 转换为 JSON
 	if sRet.TradeSuggest.TradeSide != common.TradeSideNone {
-		go redis.Publish(PubChannel, PubMsg{
-			DataSource:   s.params.DataSource,
-			TradeSuggest: sRet.TradeSuggest,
-		})
-		jsonData, _ := json.Marshal(sRet)
-		logger.Warnf("handleFlow: %+v\n", string(jsonData))
-
+		pubMsg(*sRet)
+		logger.Warnf("pubAck: %v\n", sRet.Params)
 	}
+
+}
+
+func pubMsg(msg StrategyRet) {
+	// msg.Params = nil
+	// for _, groupStrategyRet := range msg.GroupStrategyRets {
+	// 	groupStrategyRet.Params = nil
+	// 	for _, microStrategyRet := range groupStrategyRet.MicroStrategyRets {
+	// 		microStrategyRet.Params = nil
+	// 	}
+	// }
+	jsonData, _ := json.Marshal(msg)
+	logger.Warnf("handleFlow: %+v\n", string(jsonData))
+	go redis.Publish(PubChannel, PubMsg{
+		DataSource:  msg.Params.DataSource,
+		StrategyRet: msg,
+	})
 
 }
 
@@ -153,13 +166,24 @@ func (s *Strategy) handleData(period int, limit int) ([]common.KLine, error) {
 	if err != nil {
 		return nil, err
 	}
-	if s.kLines[period] == nil || len(s.kLines[period]) < limit {
+	if limit == params.DataSource.Limit {
 		s.kLines[period] = klines
+		logger.Infof("%v Strategy 首次请求 kLines: %d", s.params.Name, len(s.kLines[period]))
 	} else {
 		kLen := len(s.kLines[period])
-		// fmt.Printf("=>%+v\n", s.kLines[period][kLen-1])
-		s.kLines[period] = append(s.kLines[period][:kLen-1], klines...)
-		// fmt.Printf("==>%+v\n", s.kLines[period][kLen-1])
+		if s.kLines[period][kLen-1].OpenTime == klines[limit-1].OpenTime {
+			logger.Infof("更新k线(openTime: %d,%d): closeTime(%d,%d)", s.kLines[period][kLen-1].OpenTime, klines[limit-1].OpenTime, s.kLines[period][kLen-1].CloseTime, klines[limit-1].CloseTime)
+
+			//更新k线
+			s.kLines[period] = append(s.kLines[period][:kLen-limit], klines...)
+
+		} else {
+			logger.Infof("替换k线(openTime: %d,%d): closeTime(%d,%d)", s.kLines[period][kLen-1].OpenTime, klines[limit-1].OpenTime, s.kLines[period][kLen-1].CloseTime, klines[limit-1].CloseTime)
+
+			//替换k线
+			s.kLines[period] = append(s.kLines[period][limit:], klines...)
+
+		}
 	}
 	return s.kLines[period], nil
 }
@@ -194,8 +218,9 @@ func (s *Strategy) execute(limit int) (sRet *StrategyRet, err error) {
 	return
 }
 
-func checkParams(params StrategyParams) error {
-	if len(params.GroupStrateies) > 2 {
+func checkParams(params *StrategyParams) error {
+
+	if params == nil || len(params.GroupStrateies) > 2 {
 		return fmt.Errorf("GroupStrateies length should be less than 2")
 	}
 	return nil

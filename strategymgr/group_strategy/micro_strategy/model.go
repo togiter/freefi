@@ -18,7 +18,7 @@ type ExtParams struct {
 }
 
 type MicroStrategyRet struct {
-	Params       MicroStrategyParams    `json:"params"`
+	Params       *MicroStrategyParams   `json:"params"`
 	TradeSuggest common.TradeSuggest    `json:"tradeSuggest"`
 	Opts         map[string]interface{} `json:"opts"`
 }

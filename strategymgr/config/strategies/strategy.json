@@ -9,16 +9,16 @@
             "symbol": "ETH-USDT",
             "market": "SPOT",
             "limit": 150,
-            "ticker": 600
+            "ticker": 3000
         },
         "groupStrategies": {
-            "60":{
+            "15":{
                 "name":"50%(bbands&macd&stochrsi)",
                 "description":"This is a sample group",
                 "kLimit": 100,
                 "status": 0,
                 "type": 0,
-                "passRate": 0.5,
+                "passRate": 0.1,
                 "ext":{
                     "prePassRate":0.0,
                     "isDictatorship": true,
@@ -93,13 +93,13 @@
             "ticker": 20
         },
         "groupStrategies": {
-            "60":{
+            "30":{
                 "name":"30mins macd &stochrsi",
                 "description":"This is a sample group",
                 "kLimit": 100,
                 "status": 0,
                 "type": 0,
-                "passRate": 0.1,
+                "passRate": 0.2,
                 "ext":{
                     "prePassRate":0.0,
                     "isDictatorship": false,
@@ -125,6 +125,16 @@
                             "signalPeriod": 7,
                             "continueSize": 0,
                             "ContinueFomo": 0
+                        }
+                    },
+                    "bbands":{
+                        "name":"bbands",
+                        "legacy": false,
+                        "params":{
+                            "inTimePeriod": 20,
+                            "deviation": 2,
+                            "KLineNum": 7,
+                            "maType": 0
                         }
                     },
                     "stochrsi":{

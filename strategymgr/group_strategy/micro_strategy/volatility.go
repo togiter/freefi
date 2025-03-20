@@ -21,7 +21,6 @@ type VolatiParams struct {
 // 波动性,暴涨 暴跌
 func ExecuteVolatility(klines []common.KLine, params MicroStrategyParams) (ret *MicroStrategyRet, err error) {
 	ret = &MicroStrategyRet{
-		Params: params,
 		TradeSuggest: common.TradeSuggest{
 			TradeSide:  common.TradeSideNone,
 			CreateTime: time.Now().Unix(),
@@ -80,10 +79,10 @@ func ExecuteVolatility(klines []common.KLine, params MicroStrategyParams) (ret *
 	mark := ""
 	if math.Abs(newVolati) > avg { //超过波动阈值
 		if newVolati > 0 { //阳线
-			tradeSide = common.TradeSideBuy
+			tradeSide = common.TradeSideLong
 			mark = fmt.Sprintf("【阳线】当前k线波动(%.5f)明显比过去(%d)平均波动(%.5f)大", newVolati, volatiParams.EffectKLineNum-2, avg)
 		} else {
-			tradeSide = common.TradeSideSell
+			tradeSide = common.TradeSideShort
 			mark = fmt.Sprintf("【阴线】当前k线波动(%.5f)明显比过去(%d)平均波动(%.5f)大", newVolati, volatiParams.EffectKLineNum-2, avg)
 
 		}

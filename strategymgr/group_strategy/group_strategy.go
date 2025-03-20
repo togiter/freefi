@@ -11,7 +11,7 @@ import (
 func Execute(kLines []common.KLine, params GroupStrategyParams) (gsRet *GroupStrategyRet, err error) {
 	gsRet = &GroupStrategyRet{
 		MicroStrategyRets: make(map[string]*micro_strategy.MicroStrategyRet),
-		Params:            params,
+		Params:            &params,
 	}
 	var waitGroup sync.WaitGroup
 	var mu sync.Mutex

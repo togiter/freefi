@@ -3,9 +3,9 @@ package common
 type TradeSide string
 
 const (
-	TradeSideNone TradeSide = "NONE"
-	TradeSideBuy  TradeSide = "BUY"
-	TradeSideSell TradeSide = "SELL"
+	TradeSideNone  TradeSide = "NONE"
+	TradeSideLong  TradeSide = "LONG"
+	TradeSideShort TradeSide = "SHORT"
 )
 
 const (
@@ -58,19 +58,20 @@ type KLine struct {
 	TradeNum              int64   `json:"tradeNum"`         // 交易次数
 }
 
-//AvgPrice K线平均价格
-func (kl *KLine)AvgPrice() float64 {
+// AvgPrice K线平均价格
+func (kl *KLine) AvgPrice() float64 {
 	d := *kl
 	return (d.High + d.Low + d.Close + d.Open) / 4.0
 }
-//MidPrice K线中间价格
-func (kl *KLine)MidPrice() float64 {
+
+// MidPrice K线中间价格
+func (kl *KLine) MidPrice() float64 {
 	d := *kl
 	return (d.High + d.Low) / 2.0
 }
 
-//C_O_Price close-open
-func (kl *KLine)C_O_Price() float64 {
+// C_O_Price close-open
+func (kl *KLine) C_O_Price() float64 {
 	d := *kl
 	return d.Close - d.Open
 }

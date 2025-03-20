@@ -41,6 +41,8 @@ func Execute(data []common.KLine, paramsParams MicroStrategyParams) (msRet *Micr
 		msRet, err = ExecuteBBands(data, paramsParams)
 	default:
 		err = fmt.Errorf("Invalid strategy name: %s", paramsParams.Name)
+		return
 	}
+	msRet.Params = &paramsParams
 	return
 }

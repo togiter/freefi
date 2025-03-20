@@ -26,7 +26,6 @@ func stochRSICheck(params StochRSIParams) bool {
 
 func ExecuteStochRSI(klines []common.KLine, params MicroStrategyParams) (ret *MicroStrategyRet, err error) {
 	ret = &MicroStrategyRet{
-		Params: params,
 		TradeSuggest: common.TradeSuggest{
 			TradeSide:  common.TradeSideNone,
 			CreateTime: time.Now().Unix(),
@@ -61,39 +60,41 @@ func ExecuteStochRSI(klines []common.KLine, params MicroStrategyParams) (ret *Mi
 
 	st_1, st_2, st_3 := maStochRsiK[lenSt-1]*100.0, maStochRsiK[lenSt-2]*100.0, maStochRsiK[lenSt-3]*100.0
 	maSt_1, maSt_2, maSt_3 := maStochRsiD[lenMaSt-1]*100.0, maStochRsiD[lenMaSt-2]*100.0, maStochRsiD[lenMaSt-3]*100.0
-	overBuyVal := math.Max(sRsiParams.OverBuyVal, 75.0)
-	overSellVal := math.Min(sRsiParams.OverSellVal, 25.0)
+	overBuyVal := math.Max(sRsiParams.OverBuyVal, 65.0)
+	overSellVal := math.Min(sRsiParams.OverSellVal, 35.0)
 	logger.Infof("stochRSI-K:%f, stochRSI-K:%f,stochRSI-D:%f, stochRSI-D:%f, overBuyVal:%f, overSellVal:%f", st_1, st_2, maSt_1, maSt_2, overBuyVal, overSellVal)
 	mark := ""
 	if maSt_1 < st_1 && maSt_2 >= st_2 {
 		//金叉
-		tradeSide = common.TradeSideBuy
-		mark = "金叉"
-		if maSt_2 >= overBuyVal || st_2 >= overBuyVal {
+
+		if maSt_2 <= overSellVal || st_2 <= overSellVal || params.Legacy {
 			fomo = 1
-			mark += "+超买"
+			mark = "金叉"
+			mark += "+超卖"
+			tradeSide = common.TradeSideLong
 		}
 
 	} else if maSt_1 > st_1 && maSt_2 <= st_2 {
 		//死叉
 		mark = "死叉"
-		tradeSide = common.TradeSideSell
-		if maSt_2 <= overSellVal || st_2 <= overSellVal {
+
+		if maSt_2 >= overBuyVal || st_2 >= overBuyVal || params.Legacy {
 			fomo = 1
 			mark += "+超卖"
+			tradeSide = common.TradeSideShort
 		}
 	} else if !params.Legacy {
 		if maSt_2 <= overSellVal || st_2 <= overSellVal {
 			//金叉后+超卖状态下持续回升
 			if maSt_1 > maSt_2 && maSt_2 < st_2 && maSt_3 >= st_3 {
-				tradeSide = common.TradeSideBuy
+				tradeSide = common.TradeSideLong
 				mark = fmt.Sprintf("超卖+持续回升,ma-1-3(%.2f-%.2f-%.2f),st-1-3(%.2f-%.2f-%.2f)", maSt_1, maSt_2, maSt_3, st_1, st_2, st_3)
 
 			}
 		} else if maSt_2 >= overBuyVal || st_2 >= overBuyVal {
 			//死叉后+超买状态下持续下跌
 			if maSt_1 < maSt_2 && maSt_2 > st_2 && maSt_3 <= st_3 {
-				tradeSide = common.TradeSideSell
+				tradeSide = common.TradeSideShort
 				mark = fmt.Sprintf("超买+持续下跌,ma-1-3(%.2f-%.2f-%.2f),st-1-3(%.2f-%.2f-%.2f)", maSt_1, maSt_2, maSt_3, st_1, st_2, st_3)
 
 			}

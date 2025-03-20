@@ -115,7 +115,7 @@ func (s *StrategyMgr) Run() error {
 	return nil
 }
 
-func getCfg(path *string) ([]StrategyParams, error) {
+func getCfg(path *string) ([]*StrategyParams, error) {
 	cfgPath := "./config/strategies/strategy.json"
 	if path != nil {
 		cfgPath = *path
@@ -126,7 +126,7 @@ func getCfg(path *string) ([]StrategyParams, error) {
 	}
 	defer flie.Close()
 	decoder := json.NewDecoder(flie)
-	cfg := []StrategyParams{}
+	cfg := []*StrategyParams{}
 	err = decoder.Decode(&cfg)
 	if err != nil {
 		return nil, err

@@ -10,7 +10,7 @@ import (
 
 type GroupStrategyParams struct {
 	Name            string                                        `json:"name"`
-	Status         int                                           `json:"status"`  //0正常  1，禁用
+	Status          int                                           `json:"status"`   //0正常  1，禁用
 	Type            int                                           `json:"type"`     //  策略类型 0 主策，1辅策
 	KPeriod         int                                           `json:"kPeriod"`  //  k线时段  min
 	KTicker         int                                           `json:"kTicker"`  //  k线刷新时间
@@ -31,7 +31,7 @@ type GroupStrategyExt struct {
 }
 
 type GroupStrategyRet struct {
-	Params            GroupStrategyParams                         `json:"params"`            // 策略参数
+	Params            *GroupStrategyParams                        `json:"params"`            // 策略参数
 	TradeSuggest      common.TradeSuggest                         `json:"tradeSuggest"`      // 交易建议
 	MicroStrategyRets map[string]*micro_strategy.MicroStrategyRet `json:"microStrategyRets"` // name->微策略结果
 	Opts              map[string]interface{}                      `json:"opts"`
@@ -98,9 +98,9 @@ func (gsr *GroupStrategyRet) GetMicroStrateRet(name string) *micro_strategy.Micr
 // }
 
 func (gsr GroupStrategyRet) IsRequireChecked() bool {
-	return gsr.Params.Ext == nil || 
-	!gsr.Params.Ext.IsRequire || 
-	(gsr.Params.Ext.IsRequire && gsr.TradeSuggest.TradeSide != common.TradeSideNone)
+	return gsr.Params.Ext == nil ||
+		!gsr.Params.Ext.IsRequire ||
+		(gsr.Params.Ext.IsRequire && gsr.TradeSuggest.TradeSide != common.TradeSideNone)
 }
 
 // SuggestByMicroStrate 获取指定微策略的结果 isDelay用于 MA
@@ -151,10 +151,10 @@ func (gsr *GroupStrategyRet) MakeFinalTrade() {
 			fomo = gsr.Params.Ext.FomoLevel
 		}
 		txP := msr.TradeSuggest.StrictFomoLevel(fomo)
-		if txP == common.TradeSideBuy {
+		if txP == common.TradeSideLong {
 			logger.Infof("策略组(%s)微策略(%s)建议买入", gsr.Params.Name, msr.Params.Name)
 			longCount++
-		} else if txP == common.TradeSideSell {
+		} else if txP == common.TradeSideShort {
 			logger.Infof("策略组(%s)微策略(%s)建议卖出", gsr.Params.Name, msr.Params.Name)
 			shortCount++
 		}
@@ -162,10 +162,10 @@ func (gsr *GroupStrategyRet) MakeFinalTrade() {
 
 	finalP := common.TradeSideNone
 	if float64(shortCount)/float64(mSLen) >= passRate {
-		finalP = common.TradeSideSell
+		finalP = common.TradeSideShort
 		logger.Infof("策略组(%s)通过率(%.2f)满足卖出", gsr.Params.Name, passRate)
 	} else if float64(longCount)/float64(mSLen) >= passRate {
-		finalP = common.TradeSideBuy
+		finalP = common.TradeSideLong
 		logger.Infof("策略组(%s)通过率(%.2f)满足买入", gsr.Params.Name, passRate)
 
 	}

@@ -38,7 +38,6 @@ func macdCheck(mp MACDParams) bool {
 }
 func ExecuteMACD(klines []common.KLine, params MicroStrategyParams) (ret *MicroStrategyRet, err error) {
 	ret = &MicroStrategyRet{
-		Params: params,
 		TradeSuggest: common.TradeSuggest{
 			TradeSide:  common.TradeSideNone,
 			CreateTime: time.Now().Unix(),
@@ -88,33 +87,33 @@ func ExecuteMACD(klines []common.KLine, params MicroStrategyParams) (ret *MicroS
 
 	if dif >= dea && dif_1 < dea_1 {
 		//1. 向上穿(金)插
-		tradeSide = common.TradeSideBuy
+		tradeSide = common.TradeSideLong
 		fomo = 1
 		markV = "向上穿(金)插"
 	} else if dif <= dea && dif_1 > dea_1 {
 		//2. 向下死叉
-		tradeSide = common.TradeSideSell
+		tradeSide = common.TradeSideShort
 		fomo = 1
 		markV = "向下死叉"
 	} else if !params.Legacy {
 		if dif_3 > dif_2 && dif_2 >= dif_1 && dif > dif_1 && continueCount >= continueSize && dir == -1 {
-			tradeSide = common.TradeSideBuy
+			tradeSide = common.TradeSideLong
 			markV = fmt.Sprintf("MA值连续%d次为负,方向首次向上反弹", continueCount)
 
 		} else if dif_3 < dif_2 && dif_2 <= dif_1 && dif < dif_1 && continueCount >= continueSize && dir == 1 {
 
-			tradeSide = common.TradeSideSell
+			tradeSide = common.TradeSideShort
 			markV = fmt.Sprintf("MA值连续%d次为正,方向首次向下反弹", continueCount)
 
 		} else if dif_3 <= dif_2 && dif_2 >= dif_1 && dif <= dif_1 && continueCount >= continueSize && dir == 1 {
 			//3.顶部反弹持续向下
-			tradeSide = common.TradeSideSell
+			tradeSide = common.TradeSideShort
 			fomo = 1
 			markV = fmt.Sprintf("MA值连续%d次为正,方向持续向下反弹", continueCount)
 
 		} else if dif_3 >= dif_2 && dif_2 <= dif_1 && dif > dif_1 && continueCount >= continueSize && dir == -1 {
 			//4.底部反弹持续向上
-			tradeSide = common.TradeSideBuy
+			tradeSide = common.TradeSideLong
 			fomo = 1
 			markV = fmt.Sprintf("MA值连续%d次为负,方向持续向上反弹", continueCount)
 		}

@@ -28,7 +28,6 @@ func bbandsCheck(params BBandsParams) bool {
 
 func ExecuteBBands(klines []common.KLine, params MicroStrategyParams) (ret *MicroStrategyRet, err error) {
 	ret = &MicroStrategyRet{
-		Params: params,
 		TradeSuggest: common.TradeSuggest{
 			TradeSide:  common.TradeSideNone,
 			CreateTime: time.Now().Unix(),
@@ -82,23 +81,23 @@ func ExecuteBBands(klines []common.KLine, params MicroStrategyParams) (ret *Micr
 	//判断[n-size:n-1)
 	if Price_Up_Reverse(hdlKls, hdlUps) {
 		//上穿up线再反弹下来
-		tradeSide = common.TradeSideSell
+		tradeSide = common.TradeSideShort
 		mark = "价格上穿up后反弹,建议空"
 	} else if Price_Down_Reverse(hdlKls, hdlLows) {
 		//下穿low线再反弹上来
-		tradeSide = common.TradeSideBuy
+		tradeSide = common.TradeSideLong
 		mark = "价格下穿down线后反弹,建议多"
 	} else if BetweenMidAndDown(hdlKls[:hdlSize-1], hdlMids[:hdlSize-1], hdlLows[:hdlSize-1]) { //
 		dir = -1
 		//mid线下震荡
 		if latestK.C_O_Price() > 0.0 && latestK.MidPrice() >= latestMid {
 			//阳线且上穿mid线
-			tradeSide = common.TradeSideBuy
+			tradeSide = common.TradeSideLong
 			// txp = common.TradeShortClose
 			mark = "价格在【mid,down】中间震荡后上穿mid线,建议多(平空)"
 		} else if latestK.C_O_Price() < 0.0001 && latestK.MidPrice() <= latestLow {
 			//阴线且下穿low线
-			tradeSide = common.TradeSideSell
+			tradeSide = common.TradeSideShort
 			mark = "价格在【mid,down】中间震荡后下穿down线,建议空(平多)"
 		}
 	} else if BetweenMidAndUp(hdlKls[:hdlSize-1], hdlMids[:hdlSize-1], hdlUps[:hdlSize-1]) {
@@ -106,11 +105,11 @@ func ExecuteBBands(klines []common.KLine, params MicroStrategyParams) (ret *Micr
 		//mid线上震荡
 		if latestK.C_O_Price() > 0.0 && latestK.MidPrice() >= latestUp {
 			//阳线且上穿up线
-			tradeSide = common.TradeSideBuy
+			tradeSide = common.TradeSideLong
 			mark = "价格在【mid,up】中间震荡后上穿up线,建议多(平空)"
 		} else if latestK.C_O_Price() < 0.0001 && latestK.MidPrice() <= latestMid {
 			//阴线且下穿mid线
-			tradeSide = common.TradeSideSell
+			tradeSide = common.TradeSideShort
 			//    txp = common.TradeLongClose
 			mark = "价格在【mid,up】中间震荡后下穿mid线,建议空(平多)"
 		}
@@ -174,10 +173,10 @@ func Price_Mid_Reverse(klines []common.KLine, mids []float64) (tx common.TradeSi
 	midn, midn_1, midn_2 := mids[kLen-1], mids[kLen-2], mids[kLen-3]
 	if kn_1.Low < midn_1 && kn_2.AvgPrice() > midn_2 && kn.AvgPrice() >= midn && kn.C_O_Price() >= 0.00001 {
 		//下穿中线并反弹
-		return common.TradeSideBuy //common.TradeShortPre
+		return common.TradeSideLong //common.TradeShortPre
 	} else if kn_1.High > midn_1 && kn_2.AvgPrice() < midn_2 && kn.AvgPrice() <= midn && kn.C_O_Price() <= 0.00001 {
 		//上穿中线并反弹
-		return common.TradeSideSell
+		return common.TradeSideShort
 	}
 
 	return common.TradeSideNone

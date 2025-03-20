@@ -34,7 +34,7 @@ type StrategyParams struct {
 
 type StrategyRet struct {
 	Combine           int                                        `json:"combine"` //联合模式
-	Params            StrategyParams                             `json:"params"`
+	Params            *StrategyParams                            `json:"params"`
 	TradeSuggest      common.TradeSuggest                        `json:"tradeSuggest"`
 	GroupStrategyRets map[int64]*group_strategy.GroupStrategyRet `json:"groupStrategyRets"`
 }
@@ -91,11 +91,11 @@ func (s *StrategyRet) MakeGroups() {
 			if macdMicro.TradeSuggest.TradeSide == common.TradeSideNone {
 				if macdMicro.Opts["dir"] != nil && utils.ToInt64(macdMicro.Opts["macd"]) > 0 {
 					//MACD 在上
-					bigGroup.TradeSuggest.TradeSide = common.TradeSideBuy
+					bigGroup.TradeSuggest.TradeSide = common.TradeSideLong
 					logger.Infof("策略%s macd 在上", s.Params.Name)
 				} else {
 					//MACD 在下
-					bigGroup.TradeSuggest.TradeSide = common.TradeSideSell
+					bigGroup.TradeSuggest.TradeSide = common.TradeSideShort
 					logger.Infof("策略%s macd 在下", s.Params.Name)
 				}
 
@@ -109,15 +109,15 @@ func (s *StrategyRet) MakeGroups() {
 		s.TradeSuggest = bigGroup.TradeSuggest
 		return
 	}
-	if bigGroup.TradeSuggest.TradeSide == common.TradeSideBuy {
-		if smallGroup.TradeSuggest.TradeSide == common.TradeSideBuy {
+	if bigGroup.TradeSuggest.TradeSide == common.TradeSideLong {
+		if smallGroup.TradeSuggest.TradeSide == common.TradeSideLong {
 			logger.Infof("策略%s 联合买入", s.Params.Name)
 		} else {
 			logger.Warnf("策略%s buy有歧义(big:%+v, small:%+v)", s.Params.Name, bigGroup.TradeSuggest, smallGroup.TradeSuggest)
 			s.TradeSuggest.TradeSide = common.TradeSideNone
 		}
-	} else if bigGroup.TradeSuggest.TradeSide == common.TradeSideSell {
-		if smallGroup.TradeSuggest.TradeSide == common.TradeSideSell {
+	} else if bigGroup.TradeSuggest.TradeSide == common.TradeSideShort {
+		if smallGroup.TradeSuggest.TradeSide == common.TradeSideShort {
 			logger.Infof("策略%s 联合卖出", s.Params.Name)
 			s.TradeSuggest = bigGroup.TradeSuggest
 		} else {
