@@ -4,20 +4,24 @@ import (
 	common "freefi/strategymgr/common"
 	"freefi/strategymgr/group_strategy/micro_strategy"
 	"freefi/strategymgr/pkg/logger"
+	"math"
 	"strings"
 	"time"
 )
 
 type GroupStrategyParams struct {
-	Name            string                                        `json:"name"`
-	Status          int                                           `json:"status"`   //0正常  1，禁用
-	Type            int                                           `json:"type"`     //  策略类型 0 主策，1辅策
-	KPeriod         int                                           `json:"kPeriod"`  //  k线时段  min
-	KTicker         int                                           `json:"kTicker"`  //  k线刷新时间
-	PassRate        float64                                       `json:"passRate"` //  目标通过率
-	Ext             *GroupStrategyExt                             `json:"ext"`
-	MicroStrategies map[string]micro_strategy.MicroStrategyParams `json:"microStrategies"` //  微策略参数
-	Description     string                                        `json:"description"`
+	Name             string            `json:"name" yaml:"name"`
+	Status           int               `json:"status" yaml:"status"` //0正常  1，禁用
+	Type             int               `json:"type" yaml:"type"`     //  策略类型 0 主策，1辅策
+	PassRate         float64           `json:"passRate" yaml:"yaml"` //  目标通过率
+	CloseRate        float64           `json:"closeRate" yaml:"closeRate"`
+	Delays           map[string]string `json:"delays" yaml:"delays"`
+	Required         bool              `json:"required" yaml:"required"`
+	IgnoreOpposition bool              `json:"ignoreOpposition" yaml:"ignoreOpposition"`
+	IsDictatorship   bool              `json:"isDictatorship" yaml:"isDictatorship"`
+	FomoLevel        int               `json:"fomoLevel" yaml:"fomoLevel"` //交易等级/none,pre,pro
+	// Ext              *GroupStrategyExt                             `json:"ext"`
+	MicroStrategies map[string]micro_strategy.MicroStrategyParams `json:"microStrategies" yaml:"microStrategies"` //  微策略参数
 }
 
 type GroupStrategyExt struct {
@@ -97,28 +101,15 @@ func (gsr *GroupStrategyRet) GetMicroStrateRet(name string) *micro_strategy.Micr
 
 // }
 
-func (gsr GroupStrategyRet) IsRequireChecked() bool {
-	return gsr.Params.Ext == nil ||
-		!gsr.Params.Ext.IsRequire ||
-		(gsr.Params.Ext.IsRequire && gsr.TradeSuggest.TradeSide != common.TradeSideNone)
-}
-
-// SuggestByMicroStrate 获取指定微策略的结果 isDelay用于 MA
-func (gsr *GroupStrategyRet) SuggestByMicroStrate(name string) (sg common.TradeSuggest) {
-	msRetp := gsr.GetMicroStrateRet(name)
-	//如果没有之前的下单策略，就没有延迟确认的说法，直接返回本策略组的策略
-	if msRetp == nil {
-		return gsr.TradeSuggest
-	}
-
-	return msRetp.TradeSuggest
+func (gsr GroupStrategyRet) IsRequirePassed() bool {
+	return !gsr.Params.Required || (gsr.Params.Required && gsr.TradeSuggest.TradeSide != common.TradeSideNone)
 }
 
 func (gsr *GroupStrategyRet) MakeFinalTrade() {
 	defer func() {
 		gsr.TradeSuggest.CreateTime = time.Now().Unix()
 		if gsr.TradeSuggest.TradeSide != common.TradeSideNone {
-			logger.Infof("策略组(%s)最终交易建议(%s)", gsr.Params.Name, gsr.TradeSuggest.TradeSide)
+			logger.Infof("策略组(%s - %s)最终交易建议(%s)", gsr.Params.Name, gsr.TradeSuggest.TradeSide)
 		}
 	}()
 	//计算百分比
@@ -126,7 +117,8 @@ func (gsr *GroupStrategyRet) MakeFinalTrade() {
 	shortCount := 0
 	longCount := 0
 	mSLen := len(gsr.MicroStrategyRets)
-	passRate := gsr.Params.PassRate
+	passRate := math.Max(gsr.Params.PassRate, 0.5)
+	requiredNotPass := false
 	for _, msr := range gsr.MicroStrategyRets {
 		if mSLen == 1 {
 			gsr.TradeSuggest = msr.TradeSuggest
@@ -138,18 +130,13 @@ func (gsr *GroupStrategyRet) MakeFinalTrade() {
 			gsr.TradeSuggest = suggest
 			return
 		}
-		if !msr.IsRequireChecked() {
-			logger.Warnf("策略组(%s)微策略(%s)未通过必选要求", gsr.Params.Name, msr.Params.Name)
-			gsr.TradeSuggest.TradeSide = common.TradeSideNone
-			gsr.TradeSuggest.Mark = "策略依赖的微策略未通过"
-			return
+		if !msr.IsRequirePassed() {
+			requiredNotPass = true
+			continue
 		}
 
 		//过滤等级,//方向上的同向化过滤
-		fomo := common.FomoLevelNormal
-		if gsr.Params.Ext != nil {
-			fomo = gsr.Params.Ext.FomoLevel
-		}
+		fomo := gsr.Params.FomoLevel
 		txP := msr.TradeSuggest.StrictFomoLevel(fomo)
 		if txP == common.TradeSideLong {
 			logger.Infof("策略组(%s)微策略(%s)建议买入", gsr.Params.Name, msr.Params.Name)
@@ -158,6 +145,12 @@ func (gsr *GroupStrategyRet) MakeFinalTrade() {
 			logger.Infof("策略组(%s)微策略(%s)建议卖出", gsr.Params.Name, msr.Params.Name)
 			shortCount++
 		}
+	}
+	if requiredNotPass {
+		logger.Warnf("策略组(%s)未通过必选要求", gsr.Params.Name)
+		gsr.TradeSuggest.TradeSide = common.TradeSideNone
+		gsr.TradeSuggest.Mark = "策略依赖的微策略未通过"
+		return
 	}
 
 	finalP := common.TradeSideNone

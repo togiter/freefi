@@ -1,21 +1,21 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
+	"freefi/strategymgr/config"
 	"freefi/strategymgr/pkg/logger"
-	"os"
+	"freefi/strategymgr/strategy"
 
 	"github.com/fsnotify/fsnotify"
 )
 
 const (
-	CONFIG_FILE_PATH = "./config/strategies/strategy.json"
+	CONFIG_FILE_PATH = "./config/strategy.yaml"
 )
 
 type IStrategyMgr interface {
 	CfgPath() string
-	AddStrategy(strategy IStrategy) error
+	AddStrategy(strat strategy.IStrategy) error
 	RemoveStrategy(strategyName string) error
 	Init() error
 	Run() error
@@ -23,13 +23,23 @@ type IStrategyMgr interface {
 }
 
 type StrategyMgr struct {
-	strategies map[string]IStrategy
+	strategies map[string]strategy.IStrategy
 	cfgPath    string
+}
+
+func StartStrategyMgr() error {
+	sMgr := NewStrategyMgr()
+	err := sMgr.Init()
+	if err != nil {
+		return err
+	}
+	err = sMgr.Run()
+	return err
 }
 
 func NewStrategyMgr() IStrategyMgr {
 	return &StrategyMgr{
-		strategies: make(map[string]IStrategy),
+		strategies: make(map[string]strategy.IStrategy),
 		cfgPath:    CONFIG_FILE_PATH,
 	}
 }
@@ -40,16 +50,13 @@ func (s *StrategyMgr) Init() error {
 		return err
 	}
 	for _, sParam := range sParams {
-		if err = checkParams(sParam); err != nil {
-			return fmt.Errorf("%s Invalid params %v", sParam.Name, err)
-		}
 		if sParam.Status == 1 {
 			continue
 		}
-		strategy := NewStrategy(sParam)
+		strategy := strategy.NewStrategy(sParam)
 		s.AddStrategy(strategy)
 	}
-	go s.watchFile()
+	// go s.watchFile()
 	return nil
 }
 
@@ -78,14 +85,14 @@ func (s *StrategyMgr) Update() {
 			continue
 		}
 		if s.strategies[sParam.Name] == nil {
-			strategy := NewStrategy(sParam)
-			s.AddStrategy(strategy)
-			go func(s IStrategy) {
+			strat := strategy.NewStrategy(sParam)
+			s.AddStrategy(strat)
+			go func(s strategy.IStrategy) {
 				err := s.Work()
 				if err != nil {
 					logger.Warnf("Start strategy %s failed: %v\n", s.Name(), err)
 				}
-			}(strategy)
+			}(strat)
 			continue
 		}
 		logger.Infof("Update %s params\n", sParam.Name)
@@ -97,41 +104,46 @@ func (s *StrategyMgr) CfgPath() string {
 	return s.cfgPath
 }
 
-func (s *StrategyMgr) AddStrategy(iStrategy IStrategy) error {
+func (s *StrategyMgr) AddStrategy(iStrategy strategy.IStrategy) error {
 	s.strategies[iStrategy.Name()] = iStrategy
 	logger.Infof("Add Strategy %s \n", iStrategy.Name())
 	return nil
 }
 
 func (s *StrategyMgr) Run() error {
-	for _, strategy := range s.strategies {
-		go func(s IStrategy) {
+	for _, strat := range s.strategies {
+		go func(s strategy.IStrategy) {
 			err := s.Work()
 			if err != nil {
 				logger.Warnf("Start %s failed: %v\n", s.Name(), err)
 			}
-		}(strategy)
+		}(strat)
 	}
 	return nil
 }
 
-func getCfg(path *string) ([]*StrategyParams, error) {
-	cfgPath := "./config/strategies/strategy.json"
-	if path != nil {
-		cfgPath = *path
-	}
-	flie, err := os.Open(cfgPath)
+func getCfg(path *string) ([]*strategy.StrategyParams, error) {
+	cfg, err := config.GetStrategyCfg(nil)
 	if err != nil {
 		return nil, err
 	}
-	defer flie.Close()
-	decoder := json.NewDecoder(flie)
-	cfg := []*StrategyParams{}
-	err = decoder.Decode(&cfg)
-	if err != nil {
-		return nil, err
-	}
-	return cfg, nil
+	return cfg.Strategies, nil
+	// cfgPath := "./config/strategies/strategy.json"
+	// if path != nil {
+	// 	cfgPath = *path
+	// }
+	// flie, err := os.Open(cfgPath)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// defer flie.Close()
+	// decoder := json.NewDecoder(flie)
+	// cfg := []*strategy.StrategyParams{}
+	// err = decoder.Decode(&cfg)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// return cfg, nil
 }
 
 func (s *StrategyMgr) watchFile() {

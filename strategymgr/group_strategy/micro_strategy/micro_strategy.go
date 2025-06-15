@@ -7,18 +7,20 @@ import (
 )
 
 const (
-	MACD     = "macd"
-	RSI      = "rsi"
-	KDJ      = "kdj"
-	BBANDS   = "bbands"
-	BOLL     = "boll"
-	VOLATI   = "volatility"
-	STOCHRSI = "stochrsi"
+	MACD            = "macd"
+	RSI             = "rsi"
+	KDJ             = "kdj"
+	BBANDS          = "bbands"
+	BOLL            = "boll"
+	VOLATI          = "volatility"
+	STOCHRSI        = "stochrsi"
+	PEAK_AND_VALLEY = "peak_and_valley"
+	CUR2MAX         = "cur2max"
 )
 
 func Execute(data []common.KLine, paramsParams MicroStrategyParams) (msRet *MicroStrategyRet, err error) {
 	if len(data) == 0 {
-		return nil, fmt.Errorf("No data available")
+		return nil, fmt.Errorf("no data available")
 	}
 	defer func() {
 		msRet.MakeFinalTrade()
@@ -39,8 +41,12 @@ func Execute(data []common.KLine, paramsParams MicroStrategyParams) (msRet *Micr
 		msRet, err = ExecuteStochRSI(data, paramsParams)
 	case BBANDS:
 		msRet, err = ExecuteBBands(data, paramsParams)
+	case PEAK_AND_VALLEY:
+		msRet, err = ExecutePeakAndValley(data, paramsParams)
+	case CUR2MAX:
+		msRet, err = ExecuteCur2Max(data, paramsParams)
 	default:
-		err = fmt.Errorf("Invalid strategy name: %s", paramsParams.Name)
+		err = fmt.Errorf("invalid strategy name: %s", paramsParams.Name)
 		return
 	}
 	msRet.Params = &paramsParams

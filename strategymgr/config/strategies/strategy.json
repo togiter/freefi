@@ -109,7 +109,32 @@
                     "delayMicroStrate":""
                 },
                 "microStrategies":{
-                    
+                    "peak_and_valley":{
+                        "name":"peak_and_valley",
+                        "legacy": false,
+                        "params":{
+                            "windowSize": 15,
+                            "diffRate": 0.3,
+                            "toleranceRate": 0.3,
+                            "limit": 0
+                        }
+                    },
+                    "cur2max":{
+                        "name":"cur2max",
+                        "ext":{
+                            "isRequire": true,
+                            "isStopPoi": false,
+                            "delayX": 0,
+                            "isDictatorship": false,
+                            "fomoLevel": 0
+                        },
+                        "params":{
+                            "cur2MaxMinDiffRate": 0.15,
+                            "maxMinDiffRate": 0.03,
+                            "limit": 20,
+                            "useClose": false
+                        }
+                    },
                     "macd":{
                         "name":"macd",
                         "ext":{
@@ -124,7 +149,7 @@
                             "slowPeriod": 22,
                             "signalPeriod": 7,
                             "continueSize": 0,
-                            "ContinueFomo": 0
+                            "continueFomo": 0
                         }
                     },
                     "bbands":{

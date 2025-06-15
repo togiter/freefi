@@ -130,34 +130,6 @@ func ExecuteMACD(klines []common.KLine, params MicroStrategyParams) (ret *MicroS
 	return ret, nil
 }
 
-// return 0= none,1 long,-1 short
-func continueDir(mas []float64, limitSize int) int {
-	mLen := len(mas)
-	if limitSize == 0 || mLen < limitSize {
-		return 0
-	}
-	latestV := mas[mLen-1]
-	if latestV > 0 {
-		for i := mLen - limitSize; i < mLen; i++ {
-			tmp := mas[i]
-			if tmp < 0 {
-				return 0
-			}
-		}
-		return 1
-	} else {
-		for i := mLen - limitSize; i < mLen; i++ {
-			tmp := mas[i]
-			if tmp > 0 {
-				return 0
-			}
-		}
-		return -1
-
-	}
-
-}
-
 // continueCountDir 持续行情及方向
 func continueCountDir(mas []float64) (cCount int, dir int) {
 	mLen := len(mas)

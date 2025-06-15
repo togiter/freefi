@@ -57,15 +57,14 @@ func main() {
 			//fmt.Println(tmpStr)
 		}
 	}()
-	sMgr := NewStrategyMgr()
-	err := sMgr.Init()
-	if err != nil {
-		panic(err)
-	}
-	err = sMgr.Run()
-	if err != nil {
-		panic(err)
-	}
+	startStrate()
 	// 阻塞主
 	<-make(chan struct{})
+}
+
+func startStrate() {
+	err := StartStrategyMgr()
+	if err != nil {
+		panic(err)
+	}
 }
