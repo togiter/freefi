@@ -10,7 +10,10 @@ import (
 	"sync"
 
 	"github.com/robfig/cron/v3"
+	"gopkg.in/yaml.v3"
 )
+
+const CfgPath = "config/trade.yaml"
 
 var tradeMgr ITradeMgr
 
@@ -98,11 +101,11 @@ func SubEntner(sugMsg []byte) error {
 		logger.Error("TradeMgr.ExecuteTrade failed to unmarshal strateMsg: ", err)
 		return err
 	}
-	logger.Infof("(%s,%s)=>%s", strateMsg.DataSource.Symbol, strateMsg.DataSource.Market, strateMsg.StrategyRet.TradeSuggest.TradeSide)
+	logger.Infof("suggest : (%s,%s)=>%s", strateMsg.DataSource.Symbol, strateMsg.DataSource.Market, strateMsg.StrategyRet.TradeSuggest.TradeSide)
 	symbol := strings.ToUpper(strateMsg.DataSource.Symbol)
 
 	if tradeMgr.GetTradeMgr(symbol) == nil {
-		mapParams, err := getCfg(nil)
+		mapParams, err := getTradeCfg()
 		if err != nil {
 			logger.Error("TradeMgr.ExecuteTrade failed to get config: ", err)
 			return err
@@ -121,6 +124,17 @@ func SubEntner(sugMsg []byte) error {
 	}
 	return nil
 
+}
+
+func getTradeCfg() (map[string]*ordermgr.TradeParams, error) {
+	flieContent, err := os.ReadFile(CfgPath)
+	if err != nil {
+		return nil, err
+	}
+	var cfg map[string]*ordermgr.TradeParams
+	err = yaml.Unmarshal(flieContent, &cfg)
+	fmt.Printf("strategy config: %+v\n", cfg)
+	return cfg, err
 }
 
 func getCfg(path *string) (map[string]*ordermgr.TradeParams, error) {

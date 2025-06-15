@@ -24,7 +24,7 @@ func GetBinancePositions(params PositionParams) ([]*Position, error) {
 	symbol := strings.Replace(params.BaseOrderParams.Symbol, "-", "", -1)
 	if params.Market == common.MarketSpot {
 		params.Symbol = strings.Split(params.Symbol, "-")[0]
-		logger.Infof("GetBinancePosition params:%+v", params)
+		logger.Infof("GetBinancePosition (%v) params:%+v", *tSide, params)
 		bals, err := GetBinanceBalances(GetBalanceParams{BaseOrderParams: params.BaseOrderParams})
 		if err != nil || len(bals) == 0 {
 			return nil, fmt.Errorf("GetBinanceBalances failed:%v", err)

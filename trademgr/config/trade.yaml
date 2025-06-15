@@ -1,0 +1,73 @@
+ETH-USDT:
+  positionUseRate: 1.0 #仓位利用率
+  leverRate: 10.0 #杠杠倍数，现货为1
+  tradeType: "LIMIT" #交易类型 LIMIT , MARKET
+  ordersCount: 3 #拆单数量
+  qtyIncr: 0.3 #每单增量(%),拆单情况下有用，依次递增
+  priceIncr: 0.3 #价格增量(%),拆单情况下有用，依次递增
+  initPricePer: 0.005 #首单价格偏移(LIMIT模式有效)
+  qtyPrecision: 2 #数量精度
+  pricePrecision: 2 #价格精度
+  minUsdtQty: 20.0 #最小可交易U的数量
+  minTokenQty: 0.01 #最小可交易币种的数量
+  strategyType: "" #按策略类型下单 普通/网格/马丁
+  baseParams:
+    exchange: "BINANCE"
+    market: "SPOT"
+    symbol: "ETH-USDT"
+  closePositionParams:
+    closeType: 0 #平仓类型，0-按整体仓位平仓，1-按每笔订单平仓
+    winRate: 0.03 #止盈%
+    lossRate: 0.03 #止损%
+    tradeType: "MARKET"
+    delays: #delay[指标]:timeX -- 延时叶子策略止损，指标: 时间
+      - nodeKPeriod: 30 #满足指定节点内的叶子决策可止盈止损
+        leaves: ["macd"]  #节点决策下的叶子决策
+        timeX: 2.5
+    specifieds:
+      - nodeKPeriod: 30 
+        leaves: [stockrsi] #节点决策下的叶子决策
+  timeParams:
+    kPeriod: 30
+    tradeLoopInterval: 600
+    timeoutCancelPeriodX: 2 #挂单超时未成交时间
+    closedOrderNoOpWaitPeriodX: 2 #平仓后指定时间内不允许其他操作
+    openOrderNoOpWaitPeriodX: 2 #开仓之后指定时间内不允许其他操作
+    orderStatusCheckTicker: 600 #订单状态定时检查
+
+SOL-USDC:
+  positionUseRate: 0.5
+  leverRate: 10.0
+  tradeType: "LIMIT"
+  ordersCount: 2
+  qtyIncr: 0.3
+  priceIncr: 0.01
+  qtyPrecision: 2
+  pricePrecision: 2
+  initPricePer: 0.005
+  minUsdtQty: 20.0
+  minTokenQty: 0.01
+  strategyType: "" 
+  baseParams:
+    exchange: "BINANCE"
+    market: "SPOT"
+    symbol: "ETH-USDT"
+  closePositionParams:
+    closeType: 0
+    winRate: 0.03
+    lossRate: 0.03
+    tradeType: "MARKET"
+    delays:
+      - nodeKPeriod: 60
+        leaves: [macd]
+        timeX: 2.5
+    specifieds:
+      - nodeKPeriod: 60 
+        leaves: [stockrsi]
+  timeParams:
+    kPeriod: 60
+    tradeLoopInterval: 600
+    timeoutCancelPeriodX: 2
+    closedOrderNoOpWaitPeriodX: 2
+    openOrderNoOpWaitPeriodX: 2
+    orderStatusCheckTicker: 600

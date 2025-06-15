@@ -1,10 +1,10 @@
 tradeKeys:
   BINANCE:
-    apiKey: ""  #if Wallet, it's your wallet address
-    secretKey: "" #if Wallet, it's your wallet Private key
+    apiKey: "TIbAZUdykDIMoMh39pme94SaUgDCuDGKPgFgafYPFHxACE5BIryCiGA0D3USt5DT"  #if Wallet, it's your wallet address
+    secretKey: "99g3Rq7WHeXx5Ixx5jOBVYHbtg9iZY2Kr7cgEmFQqXpAKcMvMItmcghiYe2RgBVO" #if Wallet, it's your wallet Private key
   BINANCE1:
-    apiKey: ""  #if Wallet, it's your wallet address
-    secretKey: "" #if Wallet, it's your wallet Private key
+    apiKey: "rowu9p1YWAGWS2Pdup6tllPYxU01VXU1aSylMVTwCNDfswa6cL4DKcNokSWuK8BG"  #if Wallet, it's your wallet address
+    secretKey: "VRXPSBxhtRB25zhnV1vq3zA0T7OjJYBvx3yFzXOlBJq4apxskrqLfI9R7pK2B2dM" #if Wallet, it's your wallet Private key
 #redis 配置
 redis:
   ip: 127.0.0.1

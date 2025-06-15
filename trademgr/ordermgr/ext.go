@@ -3,7 +3,9 @@ package ordermgr
 import (
 	"freefi/trademgr/accmgr"
 	"freefi/trademgr/common"
+	"freefi/trademgr/pkg/logger"
 	"math"
+	"time"
 )
 
 func getPrice(accmgr.BaseOrderParams) (float64, error) {
@@ -75,4 +77,97 @@ func calAmountsByTotal(total float64, aIncr float64, maxCount int, stratType str
 		}
 	}
 	return amounts
+}
+
+func closeBySpecifieds(curSide string, nodes map[int64]*GroupStrategyRet, specifieds []Specified) (close bool, tradeSide string) {
+	if len(specifieds) == 0 || curSide == common.TradeSideNone || len(specifieds) == 0 {
+		//基本前提判断
+		return
+	}
+	//如果node满足，返回，否则判断node.leaves
+	nodePass := 0
+	nodeLen := len(specifieds)
+	for _, sp := range specifieds {
+		node := nodes[sp.NodeKPeriod]
+		if node == nil {
+			//node不存在
+			logger.Warnf("暂没有该时段(kPeriod = %v)的节点决策", sp.NodeKPeriod)
+			return
+		}
+		nodeTradeSide := node.TradeSuggest.TradeSide
+		if nodeTradeSide != curSide { //满足反向，且不可能为None，上面有判断
+			nodePass++
+			continue
+		}
+		//以下是node == none
+		if len(sp.Leaves) == 0 {
+			//nodePass ！= nodeLen
+			continue
+		}
+		for _, lef := range sp.Leaves {
+			leaf := node.MicroStrategyRets[lef]
+			if leaf == nil {
+				return
+			}
+			leafTradeSide := leaf.TradeSuggest.TradeSide
+			if curSide == leafTradeSide { //leaf同向
+				logger.Warnf("暂没有该时段(kPeriod = %v)的节点(%v)决策(%v)不满足要求", sp.NodeKPeriod, lef, leafTradeSide)
+				return
+			}
+		}
+		nodePass++
+	}
+	if nodePass == nodeLen {
+		close = true
+		tradeSide = common.TradeSideLong
+		if curSide == common.TradeSideLong { //反向平仓
+			tradeSide = common.TradeSideShort
+		}
+	}
+	return
+}
+
+func closeByDelays(curSide string, curSideTimestamp int64, nodes map[int64]*GroupStrategyRet, delays []Delay) (close bool, tradeSide string) {
+	if curSide == common.TradeSideNone || curSideTimestamp == 0 || len(delays) == 0 {
+		//基本前提
+		return
+	}
+	nodePass := 0
+	delayLen := len(delays)
+	delayTime := time.Now().Unix()
+	for _, d := range delays {
+		if curSideTimestamp+int64(float64(d.NodeKPeriod)*60.0*d.TimeX) < delayTime {
+			//延时时间未到
+			return
+		}
+		node := nodes[d.NodeKPeriod]
+		if node == nil {
+			//不存在该Node
+			return
+		}
+		if len(d.Leaves) == 0 {
+			//没有延时策略
+			return
+		}
+		for _, lef := range d.Leaves {
+			leaf := node.MicroStrategyRets[lef]
+			if leaf == nil {
+				return
+			}
+			leafTradeSide := leaf.TradeSuggest.TradeSide
+			if leafTradeSide == curSide {
+				return
+			}
+		}
+		nodePass++
+	}
+
+	if nodePass == delayLen {
+		close = true
+		tradeSide = common.TradeSideLong
+		if curSide == common.TradeSideLong { //反向平仓
+			tradeSide = common.TradeSideShort
+		}
+	}
+	return
 }

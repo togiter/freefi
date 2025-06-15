@@ -44,40 +44,52 @@ type BaseParams struct {
 }
 
 type TimeParams struct {
-	KPeriod                    float64 `json:"kPeriod"`                    // K线周期(秒)
-	TimeoutCancelPeriodX       float64 `json:"timeoutCancelPeriodX"`       // 超时取消时间(X分钟)
-	ClosedOrderNoOpWaitPeriodX float64 `json:"closedOrderNoOpWaitPeriodX"` // 关闭订单无操作等待时间(X分钟)
-	OpenOrderNoOpWaitPeriodX   float64 `json:"openOrderNoOpWaitPeriodX"`   // 开仓订单无操作等待时间(X分钟)
-	OrderStatusCheckTicker     int     `json:"orderStatusCheckTicker"`     // 订单状态检查间隔(秒)
+	KPeriod                    float64 `json:"kPeriod" yaml:"kPeriod"`                                       // K线周期(秒)
+	TimeoutCancelPeriodX       float64 `json:"timeoutCancelPeriodX" yaml:"timeoutCancelPeriodX"`             // 超时取消时间(X分钟)
+	ClosedOrderNoOpWaitPeriodX float64 `json:"closedOrderNoOpWaitPeriodX" yaml:"closedOrderNoOpWaitPeriodX"` // 关闭订单无操作等待时间(X分钟)
+	OpenOrderNoOpWaitPeriodX   float64 `json:"openOrderNoOpWaitPeriodX" yaml:"openOrderNoOpWaitPeriodX"`     // 开仓订单无操作等待时间(X分钟)
+	OrderStatusCheckTicker     int     `json:"orderStatusCheckTicker" yaml:"orderStatusCheckTicker"`         // 订单状态检查间隔(秒)
 }
 
 type TradeParams struct {
-	BaseParams          `json:"baseParams"`
-	TimeParams          `json:"timeParams"`
-	ClosePositionParams *ClosePositionParams `json:"closePositionParams"` //平仓策略
-	StrategyType        string               `json:"strategyType"`        // 策略名称
-	PositionUseRate     float64              `json:"positionUseRate"`     // 持仓使用率
-	LeverRate           float64              `json:"leverRate"`           // 杠杆倍数
-	TradeType           string               `json:"tradeType"`           // 交易类型 market/limit
-	OrdersCount         int                  `json:"ordersCount"`         // 订单数量
-	QtyIncr             float64              `json:"qtyIncr"`             // 订单数量增量
-	PriceIncr           float64              `json:"priceIncr"`           // 价格增量
-	InitPricePer        float64              `json:"initPricePer"`        // 初始价格
+	BaseParams          `json:"baseParams" yaml:"baseParams"`
+	TimeParams          `json:"timeParams" yaml:"timeParams"`
+	ClosePositionParams *ClosePositionParams `json:"closePositionParams" yaml:"closePositionParams"` //平仓策略
+	PositionUseRate     float64              `json:"positionUseRate" yaml:"positionUseRate"`         // 持仓使用率
+	LeverRate           float64              `json:"leverRate" yaml:"leverRate"`                     // 杠杆倍数
+	TradeType           string               `json:"tradeType" yaml:"tradeType"`                     // 交易类型 market/limit
+	OrdersCount         int                  `json:"ordersCount" yaml:"ordersCount"`                 // 订单数量
+	QtyIncr             float64              `json:"qtyIncr" yaml:"qtyIncr"`                         // 订单数量增量
+	PriceIncr           float64              `json:"priceIncr" yaml:"priceIncr"`                     // 价格增量
+	InitPricePer        float64              `json:"initPricePer" yaml:"initPricePer"`               // 初始价格
 
-	QtyPrecision   int     `json:"qtyPrecision"`   // 数量精度
-	PricePrecision int     `json:"pricePrecision"` // 价格精度
-	MinUsdtQty     float64 `json:"minUsdtQty"`     //最小USDT数量
-	MinTokenQty    float64 `json:"minTokenQty"`    //最小币种数量
+	QtyPrecision   int     `json:"qtyPrecision" yaml:"qtyPrecision"`     // 数量精度
+	PricePrecision int     `json:"pricePrecision" yaml:"pricePrecision"` // 价格精度
+	MinUsdtQty     float64 `json:"minUsdtQty" yaml:"minUsdtQty"`         //最小USDT数量
+	MinTokenQty    float64 `json:"minTokenQty" yaml:"minTokenQty"`       //最小币种数量
+	StrategyType   string  `json:"strategyType" yaml:"strategyType"`     // 策略名称
 
 }
 
 type ClosePositionParams struct {
-	WinRate      float64   `json:"winRate"`
-	LossRate     float64   `json:"lossRate"`
-	TradeType    *string   `json:"tradeType"`  // 交易类型 market/limit
-	Strategies   *[]string `json:"strategies"` //指标策略名称
-	GroupKPeroid int64     `json:"groupKPeroid"`
-	DelayMins    int       `json:"delayMins"` //平仓延迟时间(X分钟)
+	CloseType  int         `json:"closeType" yaml:"closeType"`
+	WinRate    float64     `json:"winRate" yaml:"winRate"`
+	LossRate   float64     `json:"lossRate" yaml:"lossRate"`
+	TradeType  string      `json:"tradeType" yaml:"tradeType"`   // 交易类型 market/limit
+	Delays     []Delay     `json:"delays" yaml:"delays"`         //指标策略名称
+	Specifieds []Specified `json:"specifieds" yaml:"specifieds"` //平仓延迟时间(X分钟)
+}
+
+type Delay struct {
+	// NodeKPeriod int      `json:"nodeKPeriod" yaml:"nodeKPeriod"`
+	// Leaves      []string `json:"leaves" yaml:"leaves"`
+	Specified
+	TimeX float64 `json:"timeX" yaml:"timeX"`
+}
+
+type Specified struct {
+	NodeKPeriod int64    `json:"nodeKPeriod" yaml:"nodeKPeriod"`
+	Leaves      []string `json:"leaves" yaml:"leaves"`
 }
 
 type SilentType int
@@ -106,4 +118,3 @@ func (s SilentType) String() string {
 		return "Unknown"
 	}
 }
-

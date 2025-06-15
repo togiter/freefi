@@ -16,6 +16,7 @@ import (
 //3. 分派监控订单状态和止盈止损
 
 type IOrderMgr interface {
+	IMonitor
 	IsDone() bool
 	Stop() error
 	Work() error
@@ -23,85 +24,26 @@ type IOrderMgr interface {
 }
 
 type OrderMgr struct {
-	orders    []*accmgr.Order
+	Monitor
 	strateMsg StrategyMsg
-	//沉默状态(该状态不接受策略建议)
-	isSilent     bool
-	params       TradeParams
-	orderMonitor IOrderMonitor
+
+	params TradeParams
 }
 
 // Work implements IOrderMgr.
 func (o *OrderMgr) Work() error {
-	return o.orderMonitor.Start()
+	val := o.params.TimeParams.OrderStatusCheckTicker
+	return o.Start(&val)
 }
 
 // Exit implements IOrderMgr.
 func (o *OrderMgr) Stop() error {
-	o.orderMonitor.Stop()
-	return nil
+	return o.Monitor.Stop()
 }
 
 // IsDone implements IOrderMgr.
 func (o *OrderMgr) IsDone() bool {
-	return o.orderMonitor.OrderEmpty()
-}
-
-// 是否满足止损止盈策略
-func (o *OrderMgr) canCloseStrateMsg(strateMsg StrategyMsg) (canClose bool, tradeSide string) {
-
-	//1.输入总策略为空(分支策略判断是否平仓)
-	strategyRet := strateMsg.StrategyRet
-	if strategyRet.TradeSuggest.TradeSide != common.TradeSideNone {
-		return
-	}
-	//2.当前策略不为空 && 当前有订单
-	if len(strategyRet.GroupStrategyRets) == 0 {
-		return
-	}
-	//0.提取止盈止损策略,如果没有配就返回false
-	cfg := o.params.ClosePositionParams
-	if cfg == nil {
-		return
-	}
-	curSide := o.strateMsg.StrategyRet.TradeSuggest.TradeSide
-	//3.遍历分组策略(当前只适用单个分组策略)
-	gs := strategyRet.GroupStrategyRets[cfg.GroupKPeroid]
-	if gs == nil {
-		return
-	}
-	//4.遍历分组策略的每个策略
-	for _, micro := range *cfg.Strategies {
-		microSugguest := gs.MicroStrategyRets[micro]
-		tSide := microSugguest.TradeSuggest.TradeSide
-		if tSide != common.TradeSideNone && tSide != curSide {
-			logger.Info("%s满足平仓策略(%s)", strateMsg.DataSource.Symbol, tSide)
-			return true, tSide
-		}
-	}
-	effectCount := 0
-	for _, micro := range *cfg.Strategies {
-		microSugguest := gs.MicroStrategyRets[micro]
-		tSide := microSugguest.TradeSuggest.TradeSide
-		if tSide != common.TradeSideNone && tSide != curSide {
-			effectCount += 1
-			tradeSide = tSide
-			continue
-		}
-	}
-	//满足全部微策略指标
-	if effectCount > 0 && effectCount == len(*cfg.Strategies) {
-		logger.Info("%s满足全部微策略的平仓策略(%d)....", strateMsg.DataSource.Symbol, effectCount)
-		canClose = true
-		return
-	}
-
-	// for _, gs := range *strateMsg.GroupSuggests {
-	// 	//5.遍历分组策略的每个策略
-
-	// }
-
-	return
+	return o.OrderEmpty()
 }
 
 // 平仓流程: 取消挂单=>关闭持仓
@@ -140,7 +82,7 @@ func (o *OrderMgr) closeOrders(tradeSide string) (done bool, err error) {
 		logger.Errorf("get positions error: %v", err)
 	} else {
 		position := positions[0]
-		if utils.ToFloat64(position.Qty) > MinPriceValue {
+		if utils.ToFloat64(position.Qty) > common.MinFloatValue {
 			err = accMgr.CloseOrders(accmgr.CloseOrderParams{
 				BaseOrderParams: baseParams,
 				PositionSide:    rSide,
@@ -162,36 +104,26 @@ func (o *OrderMgr) closeOrders(tradeSide string) (done bool, err error) {
 // Update implements IOrderMgr.
 func (o *OrderMgr) Update(strate StrategyMsg) error {
 	//静默状态不接受策略建议
-	if o.isSilent { //todo： 静默时间
+	if o.isSilent {
 		logger.Info("order manager is in silent mode, ignore strategy msg")
 		return nil
 	}
-	strategyRet := strate.StrategyRet
-	if strategyRet.TradeSuggest.TradeSide == o.strateMsg.StrategyRet.TradeSuggest.TradeSide {
-		logger.Info("The same trade side, ignore")
+	close, tradeSide := o.closeJudge(strate)
+	if close {
+		logger.Infof("%s 可以平仓", strate.DataSource.Symbol)
+		done, err := o.closeOrders(tradeSide)
+		if err != nil {
+			logger.Errorf("close orders error: %v", err)
+			return err
+		}
+		o.strateMsg = StrategyMsg{}
+		if done {
+			o.silent(SilentType_CloseOrder)
+		}
 		return nil
 	}
-	if strategyRet.TradeSuggest.TradeSide == common.TradeSideNone {
-
-		//可能使用局部(部分)策略止损止盈
-		canClose, tradeSide := o.canCloseStrateMsg(strate)
-		if canClose {
-			logger.Infof("%s 可以平仓", strate.DataSource.Symbol)
-			done, err := o.closeOrders(tradeSide)
-			if err != nil {
-				logger.Errorf("close orders error: %v", err)
-				return err
-			}
-			o.strateMsg = StrategyMsg{}
-			if done {
-				o.silent(SilentType_CloseOrder)
-			}
-			return nil
-		}
-
-		logger.Info("order manager received trade suggest with trade side none, ignore")
+	if tradeSide == common.TradeSideNone {
 		return nil
-
 	}
 
 	err := o.handlerOrders(strate)
@@ -201,10 +133,10 @@ func (o *OrderMgr) Update(strate StrategyMsg) error {
 	}
 
 	//检测订单
-	if o.orderMonitor.OrderEmpty() {
+	if o.OrderEmpty() {
 		logger.Info("order manager has no orders, ignore strategy msg")
 		o.strateMsg = StrategyMsg{}
-		o.orderMonitor.Stop()
+		o.Stop()
 		return nil
 	}
 	o.strateMsg = strate
@@ -226,21 +158,7 @@ func (o *OrderMgr) getAvaliableBalance(isSell bool, sMsg StrategyMsg) (string, e
 			sym = coins[0] //sell,查询现货余额
 		}
 	}
-	accs := accmgr.NewAccMgr()
-	// if market != common.MarketSpot && len(o.orders) > 0 {
-	// 	//非现货先取消挂单
-	// 	err := accs.CancelOrders(accmgr.CancelOrderParams{
-	// 		BaseOrderParams: accmgr.BaseOrderParams{
-	// 			Symbol:   o.params.BaseParams.Symbol,
-	// 			Exchange: o.params.BaseParams.Exchange,
-	// 			Market:   o.params.BaseParams.Market,
-	// 		},
-	// 	})
-	// 	if err != nil {
-	// 		logger.Errorf("cancel all orders error: %v", err)
-	// 	}
-	// }
-	bals, err := accs.GetBalances(accmgr.GetBalanceParams{
+	bals, err := o.accMgr.GetBalances(accmgr.GetBalanceParams{
 		BaseOrderParams: accmgr.BaseOrderParams{
 			Symbol:   sym,
 			Exchange: o.params.BaseParams.Exchange,
@@ -255,10 +173,8 @@ func (o *OrderMgr) getAvaliableBalance(isSell bool, sMsg StrategyMsg) (string, e
 }
 
 func (o *OrderMgr) handleOrderBefore(sMsg StrategyMsg) error {
-
 	_, err := o.closeOrders(sMsg.StrategyRet.TradeSuggest.TradeSide)
 	logger.Infof("%scloseOrders... %v", sMsg.DataSource.Symbol, err)
-	o.orderMonitor.Stop()
 	return nil
 }
 
@@ -288,16 +204,16 @@ func (o *OrderMgr) handlerOrders(strateMsg StrategyMsg) error {
 	oPrice := strateRet.TradeSuggest.Price
 	//Market price参数无效
 	if o.params.TradeType == common.OrderTypeLimit {
-		curPrice, err := getPrice(baseParams)
+		curPrice, err := o.accMgr.GetPrice(baseParams)
 		if err != nil {
 			logger.Errorf("get price error: %v", err)
 			return err
 		}
-		if curPrice > 0.00000001 { //precision handler
+		if curPrice > common.MinFloatValue { //precision handler
 			oPrice = curPrice
 		}
 	}
-	if oPrice < 0.00000001 {
+	if oPrice < common.MinFloatValue {
 		logger.Errorf("invalid price: %v", oPrice)
 		return fmt.Errorf("invalid price: %v", oPrice)
 	}
@@ -330,7 +246,7 @@ func (o *OrderMgr) handlerOrders(strateMsg StrategyMsg) error {
 		canTrade = extBalance / oPrice //buy
 	}
 	logger.Infof("canTrade balance: %.5f,market:%s,tside:%s", canTrade, baseParams.Market, strateRet.TradeSuggest.TradeSide)
-	if canTrade < 0.00001 {
+	if canTrade < 0.001 {
 		return fmt.Errorf("not enough balance: %.5f", canTrade)
 	}
 
@@ -347,7 +263,6 @@ func (o *OrderMgr) handlerOrders(strateMsg StrategyMsg) error {
 	amounts := calAmountsByTotal(utils.ToFloat64(canTrade), amountIncr, maxC, o.params.StrategyType)
 
 	oPrice = oPrice * (1.0 - float64(txDir)*o.params.InitPricePer)
-	acc := accmgr.NewAccMgr()
 	qtyPrecision := int(math.Min(4, float64(o.params.QtyPrecision)))
 	pricePrecision := int(math.Min(5, float64(o.params.PricePrecision)))
 
@@ -362,7 +277,7 @@ func (o *OrderMgr) handlerOrders(strateMsg StrategyMsg) error {
 		amount := amounts[i]
 		qty := utils.ToFixed(amount, qtyPrecision)
 		priC := utils.ToFixed(oPrice, pricePrecision)
-		order, err := acc.CreateOrder(accmgr.PlaceOrderParams{
+		order, err := o.accMgr.CreateOrder(accmgr.PlaceOrderParams{
 			BaseOrderParams: baseParams,
 			Side:            strateRet.TradeSuggest.TradeSide,
 			Type:            tradeT,
@@ -405,13 +320,58 @@ func (o *OrderMgr) handlerOrders(strateMsg StrategyMsg) error {
 		oPrice = oPrice * (1.0 - float64(txDir)*priceIncr)
 	}
 	if len(ords) > 0 {
-		o.orderMonitor.ResetToOrders(ords)
+		o.AddOrders(ords)
 	}
 	return nil
 }
 
-func (o *OrderMgr) silent(sType SilentType) {
+// / close 为true，仅平仓
+// / close false,tradeSide != none 建仓
+func (o *OrderMgr) closeJudge(strateMsg StrategyMsg) (close bool, tradeSide string) {
+	tradeSide = common.TradeSideNone
+	//如果当前没有持仓，就返回false
+	curSide := o.strateMsg.StrategyRet.TradeSuggest.TradeSide
+	newSide := strateMsg.StrategyRet.TradeSuggest.TradeSide
+	if len(newSide) == 0 {
+		return
+	}
+	if curSide == "" {
+		curSide = common.TradeSideNone
+	}
+	logger.Infof("%v curSide: %v,newSide: %v", strateMsg.DataSource.Symbol, curSide, newSide)
+	//如果当前持仓和新策略相同，不用进行下一步操作
+	if curSide == newSide {
+		return
+	}
+	if curSide == common.TradeSideNone {
+		tradeSide = newSide
+		return
+	}
 
+	if newSide != common.TradeSideNone {
+		close = true
+		tradeSide = newSide
+		return
+	}
+
+	//如果主策略为none，判断平仓策略
+	if newSide == common.TradeSideNone {
+		nodes := strateMsg.StrategyRet.GroupStrategyRets
+		closeParams := o.params.ClosePositionParams
+		close, tradeSide = closeBySpecifieds(curSide, nodes, closeParams.Specifieds)
+		if close {
+			logger.Infof("%v 指定策略(%+v)止损触发", o.params.Symbol, closeParams.Specifieds)
+			return
+		}
+		curSideTimestamp := o.strateMsg.StrategyRet.TradeSuggest.CreateTime
+		close, tradeSide = closeByDelays(curSide, curSideTimestamp, nodes, closeParams.Delays)
+		logger.Infof("%v 延时策略(%+v)止损触发(%v)", o.params.Symbol, closeParams.Delays, tradeSide)
+		return
+	}
+	return
+}
+
+func (o *OrderMgr) silent(sType SilentType) {
 	silenceTimeX := 0.0
 	if sType == SilentType_NewOrder {
 		silenceTimeX = o.params.TimeParams.OpenOrderNoOpWaitPeriodX
@@ -421,28 +381,19 @@ func (o *OrderMgr) silent(sType SilentType) {
 		silenceTimeX = o.params.ClosedOrderNoOpWaitPeriodX
 	}
 	silenceTimeX = silenceTimeX * o.params.TimeParams.KPeriod
-	if silenceTimeX <= 0.0001 {
-		return
-	}
-	o.isSilent = true
+	o.Monitor.silent(sType, silenceTimeX)
 
-	timeAfter := time.After(time.Second * time.Duration(silenceTimeX*60.0))
-	endSec := time.Now().Unix() + int64(silenceTimeX*60.0)
-	logger.Infof("\n开始(%s)静默:%s,预计结束时间:%s\n", sType.String(), time.Now().Format("2006-01-02 15:04:05"), utils.TimeFmt(int64(endSec), ""))
-	curTime, _ := <-timeAfter
-	logger.Infof("\n结束(%s)静默:%s-%s\n", sType.String(), curTime, time.Now().Format("2006-01-02 15:04:05"))
-	o.isSilent = false
-}
-
-func (o *OrderMgr) unsilent() {
-	o.isSilent = false
 }
 
 func NewOrderMgr(tradeParams TradeParams) IOrderMgr {
 	return &OrderMgr{
-		orders: make([]*accmgr.Order, 0),
-		// strateMsg: strateMsg,
-		params:       tradeParams,
-		orderMonitor: NewOrderMonitor(),
+		params: tradeParams,
+		Monitor: Monitor{
+			isSilent: false,
+			running:  false,
+			orders:   make([]*accmgr.Order, 0),
+			done:     make(chan bool, 1),
+			accMgr:   accmgr.NewAccMgr(),
+		},
 	}
 }

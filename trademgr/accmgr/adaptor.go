@@ -91,13 +91,23 @@ func fromBNPosition(bnOrder interface{}) *Position {
 	    OrigQuoteOrderQuantity   string          `json:"origQuoteOrderQty"`
 	}
 */
+
+func turnSide(side string) string {
+	switch side {
+	case "BUY":
+		return common.TradeSideLong
+	case "SELL":
+		return common.TradeSideShort
+	}
+	return side
+}
 func FromBNCreateOrder(base BaseOrderParams, bnOrder interface{}) *Order {
 	switch ord := bnOrder.(type) {
 	case *binance.CreateOrderResponse:
 		return &Order{
 			ID:              ord.OrderID,
 			BaseOrderParams: base,
-			Side:            string(ord.Side),
+			Side:            turnSide(string(ord.Side)),
 			Type:            string(ord.Type),
 			Price:           ord.Price,
 			Qty:             ord.OrigQuantity,
@@ -112,7 +122,7 @@ func FromBNCreateOrder(base BaseOrderParams, bnOrder interface{}) *Order {
 		return &Order{
 			ID:              ord.OrderID,
 			BaseOrderParams: base,
-			Side:            string(ord.Side),
+			Side:            turnSide(string(ord.Side)),
 			Type:            string(ord.Type),
 			Price:           ord.Price,
 			Qty:             ord.OrigQuantity,
@@ -126,7 +136,7 @@ func FromBNCreateOrder(base BaseOrderParams, bnOrder interface{}) *Order {
 		return &Order{
 			ID:              ord.OrderID,
 			BaseOrderParams: base,
-			Side:            string(ord.Side),
+			Side:            turnSide(string(ord.Side)),
 			Type:            string(ord.Type),
 			Price:           ord.Price,
 			Qty:             ord.OrigQuantity,
@@ -148,7 +158,7 @@ func FromBNOrder(base BaseOrderParams, bnOrder interface{}) *Order {
 		return &Order{
 			ID:              ord.OrderID,
 			BaseOrderParams: base,
-			Side:            string(ord.Side),
+			Side:            turnSide(string(ord.Side)),
 			Type:            string(ord.Type),
 			Price:           ord.Price,
 			Qty:             ord.OrigQuantity,
@@ -163,7 +173,7 @@ func FromBNOrder(base BaseOrderParams, bnOrder interface{}) *Order {
 		return &Order{
 			ID:              ord.OrderID,
 			BaseOrderParams: base,
-			Side:            string(ord.Side),
+			Side:            turnSide(string(ord.Side)),
 			Type:            string(ord.Type),
 			Price:           ord.Price,
 			Qty:             ord.OrigQuantity,
@@ -178,7 +188,7 @@ func FromBNOrder(base BaseOrderParams, bnOrder interface{}) *Order {
 		return &Order{
 			ID:              ord.OrderID,
 			BaseOrderParams: base,
-			Side:            string(ord.Side),
+			Side:            turnSide(string(ord.Side)),
 			Type:            string(ord.Type),
 			Price:           ord.Price,
 			Qty:             ord.OrigQuantity,
