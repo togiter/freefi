@@ -1,0 +1,188 @@
+[
+    {
+        "name": "strategy1",
+        "description": "This is a sample strategy",
+        "combine": 0,
+        "status": 0,
+        "dataSource": {
+            "exchange": "BINANCE",
+            "symbol": "ETH-USDT",
+            "market": "SPOT",
+            "limit": 150,
+            "ticker": 3000
+        },
+        "groupStrategies": {
+            "15":{
+                "name":"50%(bbands&macd&stochrsi)",
+                "description":"This is a sample group",
+                "kLimit": 100,
+                "status": 0,
+                "type": 0,
+                "passRate": 0.1,
+                "ext":{
+                    "prePassRate":0.0,
+                    "isDictatorship": true,
+                    "delayX":0,
+                    "fomoLevel": 0,
+                    "isRequire": false,
+                    "delayMicroStrate":""
+                },
+                "microStrategies":{
+                    "bbands":{
+                        "name":"bbands",
+                        "legacy": false,
+                        "params":{
+                            "inTimePeriod": 20,
+                            "deviation": 2,
+                            "KLineNum": 7,
+                            "maType": 0
+                        }
+                    },
+                    "macd":{
+                        "name":"macd",
+                        "ext":{
+                            "isRequire": false,
+                            "isStopPoi": false,
+                            "delayX": 0,
+                            "isDictatorship": false,
+                            "fomoLevel": 0
+                        },
+                        "params":{
+                            "fastPeriod": 10,
+                            "slowPeriod": 22,
+                            "signalPeriod": 7,
+                            "continueSize": 0,
+                            "continueFomo": 0
+                        }
+                    },
+                   
+                    "stochrsi":{
+                        "name":"stochrsi",
+                        "legacy": false,
+                        "params":{
+                            "rsiPeriod": 14,
+                            "stochRsiPeriod": 14,
+                            "smoothKPeriod": 3,
+                            "smoothDPeriod": 3,
+                            "overBuyVal": 85,
+                            "overSellVal": 20
+                        },
+                        "ext":{
+                            "isRequire": false,
+                            "isStopPoi": false,
+                            "delayX": 0,
+                            "isDictatorship": false,
+                            "fomoLevel": 0
+                        }
+                    }
+
+                }
+            }
+        }
+    },
+    {
+        "name": "SOL-USDC/FUTURE/Groups(%60(macd,stochrsi))",
+        "description": "This is a sample strategy",
+        "combine": 0,
+        "status": 0,
+        "dataSource": {
+            "exchange": "BINANCE",
+            "symbol": "SOL-USDC",
+            "market": "FUTURE_U",
+            "limit": 150,
+            "ticker": 20
+        },
+        "groupStrategies": {
+            "30":{
+                "name":"30mins macd &stochrsi",
+                "description":"This is a sample group",
+                "kLimit": 100,
+                "status": 0,
+                "type": 0,
+                "passRate": 0.2,
+                "ext":{
+                    "prePassRate":0.0,
+                    "isDictatorship": false,
+                    "delayX":0,
+                    "fomoLevel": 0,
+                    "isRequire": false,
+                    "delayMicroStrate":""
+                },
+                "microStrategies":{
+                    "peak_and_valley":{
+                        "name":"peak_and_valley",
+                        "legacy": false,
+                        "params":{
+                            "windowSize": 15,
+                            "diffRate": 0.3,
+                            "toleranceRate": 0.3,
+                            "limit": 0
+                        }
+                    },
+                    "cur2max":{
+                        "name":"cur2max",
+                        "ext":{
+                            "isRequire": true,
+                            "isStopPoi": false,
+                            "delayX": 0,
+                            "isDictatorship": false,
+                            "fomoLevel": 0
+                        },
+                        "params":{
+                            "cur2MaxMinDiffRate": 0.15,
+                            "maxMinDiffRate": 0.03,
+                            "limit": 20,
+                            "useClose": false
+                        }
+                    },
+                    "macd":{
+                        "name":"macd",
+                        "ext":{
+                            "isRequire": false,
+                            "isStopPoi": false,
+                            "delayX": 0,
+                            "isDictatorship": false,
+                            "fomoLevel": 0
+                        },
+                        "params":{
+                            "fastPeriod": 10,
+                            "slowPeriod": 22,
+                            "signalPeriod": 7,
+                            "continueSize": 0,
+                            "continueFomo": 0
+                        }
+                    },
+                    "bbands":{
+                        "name":"bbands",
+                        "legacy": false,
+                        "params":{
+                            "inTimePeriod": 20,
+                            "deviation": 2,
+                            "KLineNum": 7,
+                            "maType": 0
+                        }
+                    },
+                    "stochrsi":{
+                        "name":"stochrsi",
+                        "legacy": false,
+                        "params":{
+                            "rsiPeriod": 14,
+                            "stochRsiPeriod": 14,
+                            "smoothKPeriod": 3,
+                            "smoothDPeriod": 3,
+                            "overBuyVal": 75,
+                            "overSellVal": 25
+                        },
+                        "ext":{
+                            "isRequire": false,
+                            "isStopPoi": false,
+                            "delayX": 0,
+                            "isDictatorship": false,
+                            "fomoLevel": 0
+                        }
+                    }
+                }
+            }
+        }
+    }
+]

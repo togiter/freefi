@@ -1,0 +1,335 @@
+strategies:
+  - name: ETH-USDT
+    combine: 1  #指示如何组合节点决策， 0 => G1 && G2,1 => G1 || G2, 
+    status: 0 #0 正常， 1 禁用
+    ignoreOpposition: false #是否忽略对立(比如节点决策1:1相反决策)
+    passRate: 0.5
+    dataSource: 
+      exchange: "BINANCE"
+      symbol: "ETH-USDT"
+      market: "FUTURE_U"
+      limit: 150
+      ticker: 130 #k线查询周期 s
+    groupStrategies:
+      30:
+        name: "ETH/USDT bband&macd&stochrsi"
+        volatilityKlineNum: 20 #用于计算指定K线数量内的平均波动幅度
+        status: 0 #状态，0 启用，1，禁用
+        type: 0 # 类型，0-不区分,1-控盘线，2-决策线
+        ignoreOpposition: false #是否忽略对立(比如节点决策1:1相反决策)
+        passRate: 0.6 # 通过率，如果叶子决策满足(n/m >= passRate)，则该决策应该优先。
+        required: false # true/false是否必选,如果该指标不满足，该组其他指标也无法通过。
+        closeRate: 0.5 #平仓率，如果叶子决策满足(n/m),可作为平仓策略(不满足开仓的情况)
+        isDictatorship: false # 是否有独断/裁能力，如果该指标通过，其他指标通不通过不重要。
+        fomoLevel: 0 #交易等级
+        delays: #延时策略，如果组内指标talib满足延时(X倍K线时间)策略，一般作为止盈止损平仓指标。
+          macd: 2
+        microStrategies: #叶子策略
+          macd:
+            name: "macd"
+            required: false # true/false是否必选,如果该指标不满足，该组其他指标也无法通过。
+            isDictatorship: false # 是否有独断/裁能力，如果该指标通过，其他指标通不通过不重要。
+            legacy: false #是否使用经典决策(未经优化)。如果为否，则默认使用优化后的指标。
+            params:
+              fastPeriod: 10
+              slowPeriod: 22
+              signalPeriod: 7
+              continueSize: 10 #持续未交叉K线时段
+              continueFomo: 3 #交叉后N个K线内
+          bbands:
+            name: "bbands"
+            required: false
+            isDictatorship: false
+            legacy: false
+            params:
+              inTimePeriod: 20
+              deviation: 2
+              kLineNum: 7
+              maType: 0 
+          stochrsi:
+            name: "stochrsi"
+            required: false
+            isDictatorship: false
+            legacy: false
+            params:
+              rsiPeriod: 14
+              stochRsiPeriod: 14
+              smoothKPeriod: 3
+              smoothDPeriod: 3
+              overBuyVal: 85 #超买阈值
+              overSellVal: 20 #超卖阈值
+          cur2max:
+            name: "cur2max"
+            required: true
+            isDictatorship: false
+            legacy: false
+            params:
+              cur2MaxMinDiffRate: 0.02 #//当前值和最大/最小值的差值
+              MaxMinDiffRate: 0.05 #//最大最小值涨跌幅
+              UseClose: true #//是否使用收盘价作为计算？ 默认使用最高(波峰)/最低价(波谷)
+              Limit: 20 #//最大k线
+      60:
+        name: "ETH/USDT bband&stochrsi111"
+        volatilityKlineNum: 20
+        status: 0 #状态，0 启用，1，禁用
+        type: 0 # 类型，0-不区分,1-控盘线，2-决策线
+        ignoreOpposition: false #是否忽略对立(比如节点决策1:1相反决策)
+        passRate: 0.6 # 通过率，如果叶子决策满足(n/m >= passRate)，则该决策应该优先。
+        required: false # true/false是否必选,如果该指标不满足，该组其他指标也无法通过。
+        closeRate: 0.5 #平仓率，如果叶子决策满足(n/m),可作为平仓策略(不满足开仓的情况)
+        isDictatorship: false # 是否有独断/裁能力，如果该指标通过，其他指标通不通过不重要。
+        fomoLevel: 0 #交易等级
+        delay: #延时策略，如果组内指标talib满足延时(X倍K线时间)策略，一般作为止盈止损平仓指标。
+          macd: 2
+        microStrategies: #叶子策略
+          macd:
+            name: "macd"
+            required: false # true/false是否必选,如果该指标不满足，该组其他指标也无法通过。
+            isDictatorship: false # 是否有独断/裁能力，如果该指标通过，其他指标通不通过不重要。
+            legacy: false #是否使用经典决策(未经优化)。如果为否，则默认使用优化后的指标。
+            params:
+              fastPeriod: 10
+              slowPeriod: 22
+              signalPeriod: 7
+              continueSize: 10
+              continueFomo: 0
+          bbands:
+            name: "bbands"
+            required: false
+            isDictatorship: false
+            legacy: false
+            params:
+              inTimePeriod: 20
+              deviation: 2
+              kLineNum: 7
+              maType: 0 
+          stochrsi:
+            name: "stochrsi"
+            required: false
+            isDictatorship: false
+            legacy: false
+            params:
+              rsiPeriod: 14
+              stochRsiPeriod: 14
+              smoothKPeriod: 3
+              smoothDPeriod: 3
+              overBuyVal: 85 #超买阈值
+              overSellVal: 20 #超卖阈值
+          cur2max:
+            name: "cur2max"
+            required: true
+            isDictatorship: false
+            legacy: false
+            params:
+              cur2MaxMinDiffRate: 0.03 #//当前值和最大/最小值的差值
+              MaxMinDiffRate: 0.05 #//最大最小值涨跌幅
+              UseClose: true #//是否使用收盘价作为计算？ 默认使用最高(波峰)/最低价(波谷)
+              Limit: 30 #//最大k线
+  - name: "SOL-USDC"
+    combine: 0  #指示如何组合节点决策， 0 => G1 && G2,1 => G1 || G2, 
+    status: 0 #0 正常， 1 禁用
+    ignoreOpposition: false #是否忽略对立(比如节点决策1:1相反决策)
+    passRate: 0.6
+    dataSource: 
+      exchange: "BINANCE"
+      symbol: "SOL-USDC"
+      market: "FUTURE_U"
+      limit: 150
+      ticker: 150 #k线查询周期 s
+    groupStrategies:
+      60:
+        name: "bband&stochrsi1111"
+        volatilityKlineNum: 20
+        status: 0 #状态，0 启用，1，禁用
+        type: 0 # 类型，0-不区分,1-控盘线，2-决策线
+        ignoreOpposition: false #是否忽略对立(比如节点决策1:1相反决策)
+        passRate: 0.6 # 通过率，如果叶子决策满足(n/m >= passRate)，则该决策应该优先。
+        required: false # true/false是否必选,如果该指标不满足，该组其他指标也无法通过。
+        closeRate: 0.5 #平仓率，如果叶子决策满足(n/m),可作为平仓策略(不满足开仓的情况)
+        isDictatorship: false # 是否有独断/裁能力，如果该指标通过，其他指标通不通过不重要。
+        fomoLevel: 0 #交易等级
+        delays: #延时策略，如果组内指标talib满足延时(X倍K线时间)策略，一般作为止盈止损平仓指标。
+          macd: 2
+        microStrategies: #叶子策略
+          macd:
+            name: "macd"
+            required: false # true/false是否必选,如果该指标不满足，该组其他指标也无法通过。
+            isDictatorship: false # 是否有独断/裁能力，如果该指标通过，其他指标通不通过不重要。
+            legacy: false #是否使用经典决策(未经优化)。如果为否，则默认使用优化后的指标。
+            params:
+              fastPeriod: 10
+              slowPeriod: 22
+              signalPeriod: 7
+              continueSize: 10
+              continueFomo: 0
+          bbands:
+            name: "bbands"
+            required: false
+            isDictatorship: false
+            legacy: false
+            params:
+              inTimePeriod: 20
+              deviation: 2
+              kLineNum: 7
+              maType: 0 
+          stochrsi:
+            name: "stochrsi"
+            required: false
+            isDictatorship: false
+            legacy: false
+            params:
+              rsiPeriod: 14
+              stochRsiPeriod: 14
+              smoothKPeriod: 3
+              smoothDPeriod: 3
+              overBuyVal: 85 #超买阈值
+              overSellVal: 20 #超卖阈值
+          cur2max:
+            name: "cur2max"
+            required: true
+            isDictatorship: false
+            legacy: false
+            params:
+              cur2MaxMinDiffRate: 0.03 #//当前值和最大/最小值的差值
+              MaxMinDiffRate: 0.05 #//最大最小值涨跌幅
+              UseClose: true #//是否使用收盘价作为计算？ 默认使用最高(波峰)/最低价(波谷)
+              Limit: 30 #//最大k线
+ 
+  - name: "SUI-USDT"
+    combine: 0  #指示如何组合节点决策，0 => G1 && G2,1 => G1 || G2, 
+    status: 0 #0 正常， 1 禁用
+    ignoreOpposition: false #是否忽略对立(比如节点决策1:1相反决策)
+    passRate: 0.6
+    dataSource:
+      exchange: "BINANCE"
+      symbol: "SUI-USDT"
+      market: "SPOT"
+      limit: 150
+      ticker: 200 #k线查询周期 s
+    groupStrategies:
+      120:
+        name: "sui-usdt bband&stochrsi&macd"
+        volatilityKlineNum: 20
+        status: 0 #状态，0 启用，1，禁用
+        type: 0 # 类型，0-不区分,1-控盘线，2-决策线
+        ignoreOpposition: false #是否忽略对立(比如节点决策1:1相反决策)
+        passRate: 0.7 # 通过率，如果叶子决策满足(n/m >= passRate)，则该决策应该优先。
+        required: false # true/false是否必选,如果该指标不满足，该组其他指标也无法通过。
+        closeRate: 0.5 #平仓率，如果叶子决策满足(n/m),可作为平仓策略(不满足开仓的情况)
+        isDictatorship: false # 是否有独断/裁能力，如果该指标通过，其他指标通不通过不重要。
+        fomoLevel: 0 #交易等级
+        delays: #延时策略，如果组内指标talib满足延时(X倍K线时间)策略，一般作为止盈止损平仓指标。
+          macd: 2
+        microStrategies: #叶子策略
+          macd:
+            name: "macd"
+            required: false # true/false是否必选,如果该指标不满足，该组其他指标也无法通过。
+            isDictatorship: false # 是否有独断/裁能力，如果该指标通过，其他指标通不通过不重要。
+            legacy: false #是否使用经典决策(未经优化)。如果为否，则默认使用优化后的指标。
+            params:
+              fastPeriod: 10
+              slowPeriod: 22
+              signalPeriod: 7
+              continueSize: 10
+              continueFomo: 0
+          bbands:
+            name: "bbands"
+            required: false
+            isDictatorship: false
+            legacy: false
+            params:
+              inTimePeriod: 20
+              deviation: 2
+              kLineNum: 7
+              maType: 0
+          stochrsi:
+            name: "stochrsi"
+            required: false
+            isDictatorship: false
+            legacy: false
+            params:
+              rsiPeriod: 14
+              stochRsiPeriod: 14
+              smoothKPeriod: 3
+              smoothDPeriod: 3
+              overBuyVal: 80 #超买阈值
+              overSellVal: 25 #超卖阈值
+          cur2max:
+            name: "cur2max"
+            required: true
+            isDictatorship: false
+            legacy: false
+            params:
+              cur2MaxMinDiffRate: 0.05 #//当前值和最大/最小值的差值
+              MaxMinDiffRate: 0.1 #//最大最小值涨跌幅
+              UseClose: true #//是否使用收盘价作为计算？ 默认使用最高(波峰)/最低价(波谷)
+              Limit: 30 #//最大k线
+  - name: BTC-USDT
+    combine: 1  #指示如何组合节点决策， 0 => G1 && G2,1 => G1 || G2, 
+    status: 0 #0 正常， 1 禁用
+    ignoreOpposition: false #是否忽略对立(比如节点决策1:1相反决策)
+    passRate: 0.6
+    dataSource: 
+      exchange: "BINANCE"
+      symbol: "BTC-USDT"
+      market: "FUTURE_U"
+      limit: 150
+      ticker: 500 #k线查询周期 s
+    groupStrategies:
+      240:
+        name: "BTC/USDT bband&macd&stochrsi"
+        volatilityKlineNum: 25
+        status: 0 #状态，0 启用，1，禁用
+        type: 0 # 类型，0-不区分,1-控盘线，2-决策线
+        ignoreOpposition: false #是否忽略对立(比如节点决策1:1相反决策)
+        passRate: 0.6 # 通过率，如果叶子决策满足(n/m >= passRate)，则该决策应该优先。
+        required: false # true/false是否必选,如果该指标不满足，该组其他指标也无法通过。
+        closeRate: 0.5 #平仓率，如果叶子决策满足(n/m),可作为平仓策略(不满足开仓的情况)
+        isDictatorship: false # 是否有独断/裁能力，如果该指标通过，其他指标通不通过不重要。
+        fomoLevel: 0 #交易等级
+        delays: #延时策略，如果组内指标talib满足延时(X倍K线时间)策略，一般作为止盈止损平仓指标。
+          macd: 2
+        microStrategies: #叶子策略
+          macd:
+            name: "macd"
+            required: false # true/false是否必选,如果该指标不满足，该组其他指标也无法通过。
+            isDictatorship: false # 是否有独断/裁能力，如果该指标通过，其他指标通不通过不重要。
+            legacy: false #是否使用经典决策(未经优化)。如果为否，则默认使用优化后的指标。
+            params:
+              fastPeriod: 10
+              slowPeriod: 22
+              signalPeriod: 7
+              continueSize: 10 #持续未交叉K线时段
+              continueFomo: 3 #交叉后N个K线内
+          bbands:
+            name: "bbands"
+            required: false
+            isDictatorship: false
+            legacy: false
+            params:
+              inTimePeriod: 20
+              deviation: 2
+              kLineNum: 7
+              maType: 0 
+          stochrsi:
+            name: "stochrsi"
+            required: false
+            isDictatorship: false
+            legacy: false
+            params:
+              rsiPeriod: 14
+              stochRsiPeriod: 14
+              smoothKPeriod: 3
+              smoothDPeriod: 3
+              overBuyVal: 85 #超买阈值
+              overSellVal: 20 #超卖阈值
+          cur2max:
+            name: "cur2max"
+            required: true
+            isDictatorship: false
+            legacy: false
+            params:
+              cur2MaxMinDiffRate: 0.03 #//当前值和最大/最小值的差值
+              MaxMinDiffRate: 0.05 #//最大最小值涨跌幅
+              UseClose: true #//是否使用收盘价作为计算？ 默认使用最高(波峰)/最低价(波谷)
+              Limit: 20 #//最大k线

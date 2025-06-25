@@ -1,0 +1,153 @@
+ETH-USDT:
+  positionUseRate: 0.5 #仓位利用率
+  leverRate: 10.0 #杠杠倍数，现货为1
+  tradeType: "LIMIT" #交易类型 LIMIT , MARKET
+  ordersCount: 1 #拆单数量
+  qtyIncr: 0.3 #每单增量(%),拆单情况下有用，依次递增
+  priceIncr: 0.01 #价格增量(%),拆单情况下有用，依次递增
+  initPricePer: 0.001 #首单价格偏移(LIMIT模式有效)
+  qtyPrecision: 2 #数量精度
+  pricePrecision: 2 #价格精度
+  minUsdtQty: 20.0 #最小可交易U的数量
+  minTokenQty: 0.01 #最小可交易币种的数量
+  strategyType: "" #按策略类型下单 普通/网格/马丁
+  baseParams:
+    exchange: "BINANCE"
+    market: "FUTURE_U"
+    symbol: "ETH-USDT"
+  closePositionParams:
+    closeType: 0 #平仓类型，0-按整体仓位平仓，1-按每笔订单平仓
+    winRate: 0.015 #止盈%
+    lossRate: 0.008 #止损%
+    tradeType: "MARKET"
+    delays: #delay[指标]:timeX -- 延时叶子策略止损，指标: 时间
+      - nodeKPeriod: 30 #满足指定节点内的叶子决策可止盈止损
+        leaves: ["macd"]  #节点决策下的叶子决策
+        timeX: 4
+    specifieds:
+      - nodeKPeriod: 30 
+        leaves: ["stochrsi"] #节点决策下的叶子决策
+    quickVolidity: #快速波动
+        - nodeKPeriod: 30 
+          limitRateX: 2 # 超过平均波动幅度的两倍
+          reserveOrder: true #是否反向下单
+  timeParams:
+    kPeriod: 30
+    tradeLoopInterval: 50
+    timeoutCancelPeriodX: 2 #挂单超时未成交时间
+    closedOrderNoOpWaitPeriodX: 2 #平仓后指定时间内不允许其他操作
+    openOrderNoOpWaitPeriodX: 2 #开仓之后指定时间内不允许其他操作
+    orderStatusCheckTicker: 600 #订单状态定时检查
+
+SOL-USDC:
+  positionUseRate: 0.5
+  leverRate: 10.0
+  tradeType: "LIMIT"
+  ordersCount: 1
+  qtyIncr: 0.3
+  priceIncr: 0.002
+  qtyPrecision: 2
+  pricePrecision: 2
+  initPricePer: 0.001
+  minUsdtQty: 20.0
+  minTokenQty: 0.01
+  strategyType: "" 
+  baseParams:
+    exchange: "BINANCE"
+    market: "FUTURE_U"
+    symbol: "SOL-USDC"
+  closePositionParams:
+    closeType: 0
+    winRate: 0.015
+    lossRate: 0.01
+    tradeType: "MARKET"
+    delays:
+      - nodeKPeriod: 60
+        leaves: ["macd"]
+        timeX: 4.0
+    specifieds:
+      - nodeKPeriod: 60 
+        leaves: ["bbands"]
+    quickVolidity: #快速波动
+        - nodeKPeriod: 60 
+          limitRateX: 1.7 # 超过平均波动幅度的两倍
+          reserveOrder: true #是否反向下单
+  timeParams:
+    kPeriod: 60
+    tradeLoopInterval: 80
+    timeoutCancelPeriodX: 2
+    closedOrderNoOpWaitPeriodX: 2
+    openOrderNoOpWaitPeriodX: 2
+    orderStatusCheckTicker: 400
+SUI-USDT:
+  positionUseRate: 0.5
+  leverRate: 10.0
+  tradeType: "LIMIT"
+  ordersCount: 3
+  qtyIncr: 0.3
+  priceIncr: 0.015
+  qtyPrecision: 1
+  pricePrecision: 4
+  initPricePer: 0.005
+  minUsdtQty: 20.0
+  minTokenQty: 10
+  strategyType: ""
+  baseParams:
+    exchange: "BINANCE"
+    market: "SPOT"
+    symbol: "SUI-USDT"
+  closePositionParams:
+    closeType: 0
+    winRate: 0.045
+    lossRate: 0.025
+    tradeType: "MARKET"
+    delays:
+      - nodeKPeriod: 120
+        leaves: [macd]
+        timeX: 3.5
+    specifieds:
+      - nodeKPeriod: 120
+        leaves: [bbands]
+  timeParams:
+    kPeriod: 120
+    tradeLoopInterval: 30
+    timeoutCancelPeriodX: 2
+    closedOrderNoOpWaitPeriodX: 2
+    openOrderNoOpWaitPeriodX: 2
+    orderStatusCheckTicker: 200
+BTC-USDT:
+  positionUseRate: 0.5
+  leverRate: 20.0
+  tradeType: "LIMIT"
+  ordersCount: 2
+  qtyIncr: 0.3
+  priceIncr: 0.005
+  qtyPrecision: 3
+  pricePrecision: 1
+  initPricePer: 0.001
+  minUsdtQty: 100
+  minTokenQty: 0.001
+  strategyType: ""
+  baseParams:
+    exchange: "BINANCE"
+    market: "FUTURE_U"
+    symbol: "BTC-USDT"
+  closePositionParams:
+    closeType: 0
+    winRate: 0.015
+    lossRate: 0.01
+    tradeType: "MARKET"
+    delays:
+      - nodeKPeriod: 240
+        leaves: [macd]
+        timeX: 3.5
+    specifieds:
+      - nodeKPeriod: 240
+        leaves: [macd]
+  timeParams:
+    kPeriod: 240
+    tradeLoopInterval: 35
+    timeoutCancelPeriodX: 2
+    closedOrderNoOpWaitPeriodX: 2
+    openOrderNoOpWaitPeriodX: 2
+    orderStatusCheckTicker: 500

@@ -1,0 +1,70 @@
+{   
+    "ETH-USDT":{
+        "baseParams":{
+            "exchange":"BINANCE",
+            "market": "SPOT",
+            "symbol": "ETH-USDT"
+        },
+        
+        "strategyType": "NORMAL",
+        "positionUseRate": 1.0,
+        "leverRate": 10.0,
+        "tradeType": "LIMIT",
+        "ordersCount": 3,
+        "qtyIncr": 0.3,
+        "priceIncr": 0.03,
+        "qtyPrecision": 2,
+        "pricePrecision": 2,
+        "minUsdtQty": 20.0,
+        "minTokenQty": 0.01,
+        "timeParams":{
+            "kPeriod":30,
+            "tradeLoopInterval": 10,
+            "timeoutCancelPeriodX": 2,
+            "closedOrderNoOpWaitPeriodX": 2,
+            "openOrderNoOpWaitPeriodX": 2,
+            "orderStatusCheckTicker": 600
+        },
+        "closePositionParams":{
+            "winRate": 0.03,
+            "lossRate": 0.03,
+            "tradeType": "MARKET",
+            "strategies":["macd"],
+            "delayMins": 60,
+            "groupId":""
+        }
+    },
+    "SOL-USDC":{
+        "baseParams":{
+            "exchange":"BINANCE1",
+            "market": "FUTURE_U",
+            "symbol": "SOL-USDC"
+        },
+        "strategyType": "NORMAL",
+        "positionUseRate": 1.0,
+        "leverRate": 10.0,
+        "tradeType": "LIMIT",
+        "ordersCount": 2,
+        "qtyIncr": 0.3,
+        "priceIncr": 0.03,
+        "qtyPrecision": 2,
+        "pricePrecision": 2,
+        "minUsdtQty": 20.0,
+        "timeParams":{
+            "kPeriod":30,
+            "tradeLoopInterval": 10,
+            "timeoutCancelPeriodX": 2,
+            "closedOrderNoOpWaitPeriodX": 2,
+            "openOrderNoOpWaitPeriodX": 2,
+            "orderStatusCheckTicker": 600
+        },
+        "closePositionParams":{
+            "winRate": 0.01,
+            "lossRate": 0.01,
+            "tradeType": "MARKET",
+            "strategies":["macd"],
+            "delayMins": 60,
+            "groupId":""
+        }
+    }
+}
