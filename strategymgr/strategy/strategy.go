@@ -164,8 +164,7 @@ func (s *Strategy) handleData(period int, limit int) ([]common.KLine, error) {
 	} else {
 		kLen := len(s.kLines[period])
 		if s.kLines[period][kLen-1].OpenTime == klines[limit-1].OpenTime {
-			logger.Infof("更新k线(openTime: %d,%d): closeTime(%d,%d)", s.kLines[period][kLen-1].OpenTime, klines[limit-1].OpenTime, s.kLines[period][kLen-1].CloseTime, klines[limit-1].CloseTime)
-
+			// logger.Infof("更新k线(openTime: %d,%d): closeTime(%d,%d)", s.kLines[period][kLen-1].OpenTime, klines[limit-1].OpenTime, s.kLines[period][kLen-1].CloseTime, klines[limit-1].CloseTime)
 			//更新k线
 			s.kLines[period] = append(s.kLines[period][:kLen-limit], klines...)
 
