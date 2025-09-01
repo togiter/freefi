@@ -17,6 +17,7 @@ const (
 type TradeSuggest struct {
 	//多空决策
 	TradeSide  TradeSide `json:"tradeSide"`
+	CloseSide  TradeSide `json:"closeSide"`
 	FomoLevel  int       `json:"fomoLevel"`
 	Mark       string    `json:"mark"`
 	Price      float64   `json:"price"`
