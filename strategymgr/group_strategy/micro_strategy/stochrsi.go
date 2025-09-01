@@ -103,6 +103,11 @@ func ExecuteStochRSI(klines []common.KLine, params MicroStrategyParams) (ret *Mi
 	ret.TradeSuggest.TradeSide = tradeSide
 	ret.TradeSuggest.FomoLevel = fomo
 	ret.TradeSuggest.Mark = mark
+	ret.Opts = make(map[string]interface{})
+	ret.Opts["dir"] = -1
+	if maSt_1 < st_1 {
+		ret.Opts["dir"] = 1
+	}
 	return ret, nil
 }
 
