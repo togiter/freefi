@@ -130,15 +130,12 @@ func (gsr *GroupStrategyRet) MakeFinalTrade() {
 		fomo := gsr.Params.FomoLevel
 		txP := msr.TradeSuggest.StrictFomoLevel(fomo)
 		if txP == common.TradeSideLong {
-			logger.Infof("策略组(%s)微策略(%s)建议买入", gsr.Params.Name, msr.Params.Name)
 			longCount++
 		} else if txP == common.TradeSideShort {
-			logger.Infof("策略组(%s)微策略(%s)建议卖出", gsr.Params.Name, msr.Params.Name)
 			shortCount++
 		}
 	}
 	if requiredNotPass {
-		logger.Warnf("策略组(%s)未通过必选要求", gsr.Params.Name)
 		gsr.TradeSuggest.TradeSide = common.TradeSideNone
 		gsr.TradeSuggest.Mark = "策略依赖的微策略未通过"
 		return

@@ -45,7 +45,6 @@ func Execute(kLines []common.KLine, params GroupStrategyParams) (gsRet *GroupStr
 	}
 	//附带平均波动幅度
 	vKlines := kLines[kLen-vNum:]
-	logger.Infof("num %v,kLen: %v,vv %v", vNum, kLen, len(vKlines))
 	if gsRet.Opts == nil {
 		gsRet.Opts = make(map[string]interface{})
 	}
@@ -55,8 +54,6 @@ func Execute(kLines []common.KLine, params GroupStrategyParams) (gsRet *GroupStr
 
 // 获取K线内的平均波动幅度
 func getVolatility(klines []common.KLine) float64 {
-	logger.Infof("vv %v", len(klines))
-
 	kLen := len(klines)
 	sum := 0.0
 	for _, k := range klines {
